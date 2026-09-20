@@ -1,52 +1,61 @@
+"use client";
+
 import Container from "@/components/shared/Container";
 import Reveal from "@/components/shared/Reveal";
+import Button from "@/components/shared/Button";
+import { useAuthUser } from "@/lib/auth";
+import { sports } from "@/data/sports";
 
-const ecosystemPillars = [
-  "Players",
-  "Coaches",
-  "Clubs",
-  "Academies",
-  "Grounds",
-  "Courts",
-  "Competitions",
-  "Tournaments",
-  "Communities",
-];
+const pillars = ["Players", "Coaches", "Clubs", "Academies", "Grounds", "Tournaments", "Communities"];
+const cricketHome = sports.find((sport) => sport.slug === "cricket")?.href;
 
 export default function Ecosystem() {
+  const { user, ready, logout } = useAuthUser();
+
   return (
-    <section
-      id="about"
-      aria-labelledby="ecosystem-heading"
-      className="scroll-mt-20 border-t border-line-soft bg-ink-2/35 py-24 sm:py-36 lg:py-48"
-    >
+    <section id="about" aria-labelledby="account-heading" className="scroll-mt-20 border-t border-line-soft bg-ink-2/40 py-20 sm:py-28">
       <Container>
         <Reveal>
-          <div className="grid gap-12 lg:grid-cols-[0.3fr_1.7fr] lg:gap-20">
+          <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end lg:gap-20">
             <div>
-              <span className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">01 / Who we are</span>
-              <span className="mt-8 block font-display text-7xl leading-none text-paper/10 sm:text-9xl">01</span>
-            </div>
-            <div>
-              <h2 id="ecosystem-heading" className="max-w-5xl font-display text-[clamp(4rem,9vw,9rem)] leading-[0.8] text-paper">
-                <span className="word-reveal block">SPORTS ARE MORE</span>
-                <span className="word-reveal word-reveal-delay block text-accent">THAN A GAME.</span>
+              <span className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">One account</span>
+              <h2 id="account-heading" className="mt-4 max-w-2xl font-display text-[clamp(2.75rem,6vw,5.5rem)] leading-[0.9] text-paper">
+                ONE LOGIN. EVERY SPORT.
               </h2>
-              <p className="mt-10 max-w-xl text-base leading-relaxed text-muted sm:ml-[18%] sm:text-lg">
-                LordOfSportz brings players, organizers, leagues and communities into one connected ecosystem. A simpler way to discover, participate and grow across every arena.
+              <p className="mt-6 max-w-lg text-base leading-relaxed text-muted sm:text-lg">
+                Sign in once and move between Cricket, Karate and what comes next — your profile travels with you.
               </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+              {ready && user ? (
+                <>
+                  <span className="text-sm text-muted">Signed in as <span className="text-paper">{user.name}</span></span>
+                  <button
+                    type="button"
+                    onClick={logout}
+                    className="rounded-full border border-line px-6 py-3 text-sm font-semibold tracking-wide text-paper transition-colors hover:border-accent hover:text-accent"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Button href="/login" variant="primary" size="lg">SIGN IN</Button>
+                  {cricketHome ? (
+                    <Button href={`${cricketHome.replace(/\/+$/, "")}/signup`} variant="secondary" size="lg" showArrow={false}>
+                      CREATE ACCOUNT
+                    </Button>
+                  ) : null}
+                </>
+              )}
             </div>
           </div>
         </Reveal>
 
-        <Reveal delayMs={160}>
-          <ul className="mt-20 grid border-t border-line sm:grid-cols-3 lg:mt-32 lg:grid-cols-9">
-            {ecosystemPillars.map((pillar, index) => (
-              <li
-                key={pillar}
-                className="border-b border-line px-3 py-5 text-sm font-semibold tracking-wide text-paper/80 transition-colors duration-300 hover:text-accent sm:border-r sm:last:border-r-0 lg:border-b-0"
-              >
-                <span className="mb-5 block text-[10px] text-accent">0{index + 1}</span>
+        <Reveal delayMs={120}>
+          <ul className="mt-14 flex flex-wrap gap-2 border-t border-line pt-6">
+            {pillars.map((pillar) => (
+              <li key={pillar} className="rounded-full border border-line px-4 py-2 text-xs font-semibold tracking-[0.18em] text-paper/70 uppercase">
                 {pillar}
               </li>
             ))}

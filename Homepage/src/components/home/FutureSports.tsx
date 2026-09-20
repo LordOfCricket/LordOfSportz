@@ -7,15 +7,15 @@ export default function FutureSports() {
   return (
     <section
       aria-labelledby="future-sports-heading"
-      className="border-t border-line-soft py-24 sm:py-32"
+      className="border-t border-line-soft py-20 sm:py-28"
     >
       <Container className="flex flex-col gap-14">
         <Reveal>
           <SectionHeading
             id="future-sports-heading"
-            eyebrow="What's Next"
-            heading="THE GAME IS GETTING BIGGER."
-            supporting="More sports are joining the platform. The architecture is built to grow — one addition at a time."
+            eyebrow="Next"
+            heading="MORE SPORTS ARE COMING."
+            supporting="New sports join the hub one at a time — each with its own home, one shared account."
           />
         </Reveal>
 

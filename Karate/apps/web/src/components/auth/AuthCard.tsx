@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
+import { HUB_URL } from "@/lib/hub";
 
 interface AuthCardProps {
   title: string;
@@ -28,6 +29,11 @@ export function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
         </Card>
 
         {footer && <div className="mt-6 text-center text-sm text-white/60">{footer}</div>}
+        {HUB_URL ? (
+          <p className="mt-4 text-center text-xs text-white/40">
+            One LordOfSportz account works across every sport. <a href={HUB_URL} className="underline hover:text-white">All sports</a>
+          </p>
+        ) : null}
       </div>
     </div>
   );

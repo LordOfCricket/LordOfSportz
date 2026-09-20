@@ -1,18 +1,12 @@
 import { Tabs } from "expo-router";
 import { ProtectedTabsGate } from "@/components/ProtectedTabsGate";
-import { colors } from "@/theme/tokens";
+import { tabScreenOptions } from "@/theme/navigation";
 
 export default function CoachTabsLayout() {
   return (
     <ProtectedTabsGate requiredRole="COACH">
       <Tabs
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.surfaceRaised },
-          headerTintColor: colors.textPrimary,
-          tabBarActiveTintColor: colors.accent,
-          tabBarIcon: () => null,
-          tabBarInactiveTintColor: colors.textMuted,
-        }}
+        screenOptions={tabScreenOptions}
       >
         <Tabs.Screen name="index" options={{ title: "Overview" }} />
         <Tabs.Screen name="students" options={{ title: "Students" }} />

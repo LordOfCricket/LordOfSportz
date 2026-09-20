@@ -5,7 +5,7 @@ import { Link, useRouter } from "expo-router";
 import type { UserRole } from "@karate/types";
 import { useAuth } from "@/context/AuthContext";
 import { roleHomePath } from "@/lib/role-routes";
-import { colors, spacing, typography } from "@/theme/tokens";
+import { colors, radii, spacing, typography } from "@/theme/tokens";
 
 /**
  * Entry screen. Redirects an authenticated user straight into their real
@@ -32,34 +32,57 @@ export default function EntryScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.heading}>Karate Platform</Text>
-      <Text style={styles.subheading}>Sign in to continue.</Text>
-      <View style={styles.actions}>
-        <Link href="/login" style={styles.primaryLink}>
-          Sign in
-        </Link>
-        <Link href="/register" style={styles.secondaryLink}>
-          Create an account
-        </Link>
+      <View style={styles.brand}>
+        <View style={styles.dot} />
+        <Text style={styles.brandText}>Karate Platform</Text>
       </View>
+      <View style={styles.hero}>
+        <Text style={styles.eyebrow}>KARATE · LORDOFSPORTZ</Text>
+        <Text style={styles.heading}>Karate competition, run properly.</Text>
+        <Text style={styles.subheading}>Tournaments, live bouts, belt grading and academies — in one place.</Text>
+        <View style={styles.actions}>
+          <Link href="/login" style={styles.primaryLink}>
+            Sign in
+          </Link>
+          <Link href="/register" style={styles.secondaryButton}>
+            Create an account
+          </Link>
+        </View>
+      </View>
+      <Text style={styles.footer}>One LordOfSportz account, every sport.</Text>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.ink, padding: spacing.xl, justifyContent: "center" },
+  container: { flex: 1, backgroundColor: colors.ink, padding: spacing.xl, justifyContent: "space-between" },
   centered: { flex: 1, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center" },
-  heading: { ...typography.title, color: colors.white },
-  subheading: { ...typography.body, color: "rgba(255,255,255,0.7)", marginTop: spacing.xs },
-  actions: { marginTop: spacing.xl, gap: spacing.md },
+  brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.md },
+  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
+  brandText: { color: colors.white, fontSize: 15, fontWeight: "700" },
+  hero: { gap: spacing.md },
+  eyebrow: { color: colors.accent, fontSize: 12, fontWeight: "700", letterSpacing: 2 },
+  heading: { color: colors.white, fontSize: 34, lineHeight: 38, fontWeight: "700" },
+  subheading: { ...typography.body, color: "rgba(255,255,255,0.7)", lineHeight: 21 },
+  actions: { marginTop: spacing.lg, gap: spacing.md },
   primaryLink: {
     backgroundColor: colors.accent,
     color: colors.white,
     textAlign: "center",
-    paddingVertical: spacing.md,
-    borderRadius: 8,
-    fontWeight: "600",
+    paddingVertical: 14,
+    borderRadius: radii.full,
+    fontWeight: "700",
     overflow: "hidden",
   },
-  secondaryLink: { color: "rgba(255,255,255,0.8)", textAlign: "center", fontSize: 13 },
+  secondaryButton: {
+    color: colors.white,
+    textAlign: "center",
+    paddingVertical: 14,
+    borderRadius: radii.full,
+    fontWeight: "600",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+    overflow: "hidden",
+  },
+  footer: { color: "rgba(255,255,255,0.45)", fontSize: 12, textAlign: "center" },
 });

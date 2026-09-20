@@ -1,22 +1,24 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
+import { HUB_URL } from "@/lib/hub";
 
 const ROLE_CARDS = [
   { role: "PLAYER", href: "/dashboard/player", description: "Track bouts, belt progression, and rankings." },
   { role: "COACH", href: "/dashboard/coach", description: "Manage students and follow live competition." },
   { role: "ACADEMY", href: "/dashboard/academy", description: "Run your organization and its tournaments." },
-  {
-    role: "SCORER",
-    href: "/dashboard/scorer",
-    description: "Officiate with a fast, focused scoring workflow.",
-  },
+  { role: "SCORER", href: "/dashboard/scorer", description: "Officiate with a fast, focused scoring workflow." },
 ] as const;
 
-const HUB_URL =
-  process.env["NEXT_PUBLIC_HUB_URL"] || (process.env.NODE_ENV !== "production" ? "http://localhost:3000" : "");
+const FEATURES = [
+  { title: "Tournaments", body: "Registration, draws and brackets for kata and kumite events." },
+  { title: "Live bouts", body: "Real-time scoring, tatami boards and results as they happen." },
+  { title: "Belts & grading", body: "Verified belt history, grading events and certificates." },
+  { title: "Academies", body: "Students, coaches and memberships in one organised place." },
+] as const;
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
+  { label: "Features", href: "#features" },
   { label: "Roles", href: "#roles" },
   ...(HUB_URL ? [{ label: "All sports", href: HUB_URL }] : []),
 ];
@@ -50,15 +52,15 @@ export default function HomePage() {
         </nav>
       </header>
 
-      <section className="mx-auto max-w-6xl px-6 py-20 text-center sm:py-28">
-        <h1 className="mx-auto max-w-3xl text-4xl font-semibold tracking-tight sm:text-5xl">
-          Competition infrastructure for serious Karate organizations.
+      <section className="mx-auto max-w-6xl px-6 py-20 sm:py-28">
+        <span className="text-xs font-semibold uppercase tracking-[0.3em] text-accent">Karate · LordOfSportz</span>
+        <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight sm:text-6xl">
+          Karate competition, run properly.
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-white/70">
-          Player development, academy operations, and live tournament scoring — one platform, one shared
-          source of truth.
+        <p className="mt-5 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg">
+          Tournaments, live bouts, belt grading and academies — one platform for players, coaches, scorers and organisers.
         </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link href="/login" className="rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-accent-hover">
             Sign in
           </Link>
@@ -68,26 +70,40 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="roles" aria-label="Roles" className="mx-auto grid max-w-6xl gap-4 px-6 pb-24 sm:grid-cols-2 lg:grid-cols-4">
-        {ROLE_CARDS.map((item) => (
-          <Link key={item.role} href={item.href}>
-            <Card className="h-full border-white/10 bg-white/5 text-white transition-colors hover:border-accent/50">
-              <CardContent>
-                <p className="text-xs font-semibold uppercase tracking-wide text-accent">{item.role}</p>
-                <p className="mt-2 text-sm text-white/70">{item.description}</p>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+      <section id="features" aria-label="Features" className="border-t border-white/10">
+        <ul className="mx-auto grid max-w-6xl gap-px bg-white/10 sm:grid-cols-2 lg:grid-cols-4">
+          {FEATURES.map((feature) => (
+            <li key={feature.title} className="bg-ink px-6 py-10">
+              <h2 className="text-lg font-semibold tracking-tight">{feature.title}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-white/60">{feature.body}</p>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="roles" aria-label="Roles" className="mx-auto max-w-6xl px-6 py-20">
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Built for every role</h2>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {ROLE_CARDS.map((item) => (
+            <Link key={item.role} href={item.href}>
+              <Card className="h-full border-white/10 bg-white/5 text-white transition-colors hover:border-accent/50">
+                <CardContent>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-accent">{item.role}</p>
+                  <p className="mt-2 text-sm text-white/70">{item.description}</p>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <footer className="border-t border-white/10 py-8 text-center text-sm text-white/50">
         {HUB_URL ? (
           <a href={HUB_URL} className="transition-colors hover:text-white">
-            Part of LordOfSportz — all sports, one account
+            One LordOfSportz account, every sport — back to all sports
           </a>
         ) : (
-          "Part of LordOfSportz"
+          "One LordOfSportz account, every sport"
         )}
       </footer>
     </div>

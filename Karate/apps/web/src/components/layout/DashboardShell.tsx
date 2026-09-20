@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { UserRole } from "@karate/types";
-import { Sidebar } from "./Sidebar";
+import { MobileNav, Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 
 interface DashboardShellProps {
@@ -16,7 +16,8 @@ export function DashboardShell({ role, userName, children }: DashboardShellProps
       <Sidebar role={role} />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar role={role} userName={userName} />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <MobileNav role={role} />
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

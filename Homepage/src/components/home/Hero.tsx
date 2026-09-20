@@ -47,36 +47,31 @@ export default function Hero() {
         <div className="hero-copy flex max-w-4xl flex-col items-start gap-6">
           <span className="hero-eyebrow inline-flex items-center gap-3 text-xs font-semibold tracking-[0.28em] text-accent uppercase">
             <span className="h-px w-8 bg-accent" aria-hidden="true" />
-            The sports universe
+            LordOfSportz
           </span>
 
-          <h1 className="hero-title max-w-5xl font-display text-[clamp(4.25rem,10.5vw,9.5rem)] leading-[0.78] tracking-tight text-paper">
-            <span className="hero-line block"><span>ONE PLATFORM.</span></span>
+          <h1 className="hero-title max-w-5xl font-display text-[clamp(3.5rem,9vw,8rem)] leading-[0.82] tracking-tight text-paper">
+            <span className="hero-line block"><span>ONE HUB.</span></span>
             <span className="hero-line block"><span>EVERY SPORT.</span></span>
           </h1>
 
-          <p className="hero-description max-w-sm text-base leading-relaxed text-paper/65 sm:text-lg">
-            A connected home for players, matches, leagues and the communities that make sport matter.
+          <p className="hero-description max-w-md text-base leading-relaxed text-paper/75 sm:text-lg">
+            Discover sports, follow matches and competitions, shop the gear — and take one account across every game.
           </p>
 
           <div className="hero-actions flex flex-col gap-4 sm:flex-row sm:items-center">
             <Button href="#sports" variant="primary" size="lg">
               EXPLORE SPORTS
             </Button>
-            <Button href="#matches" variant="secondary" size="lg" showArrow={false}>
-              VIEW MATCHES
+            <Button href="/shop" variant="secondary" size="lg" showArrow={false}>
+              SHOP GEAR
             </Button>
           </div>
-          <div className="hero-meta mt-6 flex w-full max-w-2xl flex-col justify-between gap-5 border-t border-paper/15 pt-4 sm:flex-row sm:items-end">
-            <div className="flex flex-col gap-1">
-              <span className="font-display text-5xl leading-none text-paper sm:text-6xl">01</span>
-              <span className="text-[10px] font-semibold tracking-[0.28em] text-paper/50 uppercase">The game is bigger here</span>
-            </div>
-            <div className="max-w-xs sm:text-right">
-              <span className="block text-[10px] font-semibold tracking-[0.25em] text-paper/50 uppercase">Live universe</span>
-              <span className="mt-2 block font-display text-2xl text-paper">Cricket / Karate / Tennis</span>
-            </div>
-          </div>
+          <ul aria-label="Sports on the platform" className="hero-meta mt-6 flex w-full max-w-2xl flex-wrap gap-x-8 gap-y-3 border-t border-paper/15 pt-5 text-xs font-semibold tracking-[0.22em] text-paper/70 uppercase">
+            <li className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent" />Cricket · Live</li>
+            <li className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent" />Karate · Live</li>
+            <li className="flex items-center gap-2 text-paper/40"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-paper/30" />Tennis · Soon</li>
+          </ul>
         </div>
       </Container>
 

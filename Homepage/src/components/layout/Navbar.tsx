@@ -44,7 +44,7 @@ export default function Navbar() {
           LORD<span className="text-accent">OF</span>SPORTZ
         </Link>
 
-        <ul className="hidden items-center gap-10 md:flex">
+        <ul className="hidden items-center gap-6 md:flex lg:gap-10">
           {navLinks.map((link) => (
             <li key={link.label}>
               <Link
@@ -59,7 +59,7 @@ export default function Navbar() {
 
         {user ? (
           <div className="hidden items-center gap-4 md:flex">
-            <span className="max-w-[10rem] truncate text-sm text-muted">{user.name}</span>
+            <span className="hidden max-w-[10rem] truncate text-sm text-muted xl:inline">{user.name}</span>
             <button
               type="button"
               onClick={logout}

@@ -1,21 +1,15 @@
 import { Tabs } from "expo-router";
 import { ProtectedTabsGate } from "@/components/ProtectedTabsGate";
-import { colors } from "@/theme/tokens";
+import { tabScreenOptions } from "@/theme/navigation";
 
 export default function PlayerTabsLayout() {
   return (
     <ProtectedTabsGate requiredRole="PLAYER">
       <Tabs
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.surfaceRaised },
-          headerTintColor: colors.textPrimary,
-          tabBarActiveTintColor: colors.accent,
-          tabBarIcon: () => null,
-          tabBarInactiveTintColor: colors.textMuted,
-        }}
+        screenOptions={tabScreenOptions}
       >
         <Tabs.Screen name="index" options={{ title: "Overview" }} />
-        <Tabs.Screen name="tournaments" options={{ title: "Tournaments" }} />
+        <Tabs.Screen name="tournaments" options={{ title: "Events" }} />
         <Tabs.Screen name="results" options={{ title: "Results" }} />
         <Tabs.Screen name="profile" options={{ title: "Profile" }} />
         <Tabs.Screen name="notifications" options={{ title: "Alerts" }} />

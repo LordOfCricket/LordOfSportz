@@ -17,7 +17,7 @@ export default function SportsUniverse() {
         <Reveal>
           <div className="flex items-end justify-between gap-8 border-b border-line pb-7">
             <div>
-              <span className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">02 / Sports universe</span>
+              <span className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">Sports</span>
               <h2 id="sports-heading" className="mt-4 font-display text-6xl leading-[0.82] text-paper sm:text-8xl">FIND YOUR ARENA.</h2>
             </div>
             <span className="hidden max-w-xs text-right text-sm leading-relaxed text-muted sm:block">One connected home for the sports, people and moments that keep you moving.</span>

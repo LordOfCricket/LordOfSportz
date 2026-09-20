@@ -59,6 +59,7 @@ export default function PlayerOverviewScreen() {
   if (!profile) {
     return (
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <Text style={styles.greeting}>Welcome back, {user?.fullName ?? "athlete"}</Text>
         <ProfileFormCard
           title="Complete your player profile"
           description="Tell us who you are so academies and coaches can find you."
@@ -95,6 +96,7 @@ export default function PlayerOverviewScreen() {
 }
 
 const styles = StyleSheet.create({
+  greeting: { ...typography.title, color: colors.textPrimary },
   screen: { flex: 1, backgroundColor: colors.surface },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.surface },
   content: { padding: spacing.lg, gap: spacing.md },
