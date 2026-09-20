@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /ground-owner
+Disallow: /umpire
+Disallow: /canteen
+Disallow: /bookings
+Disallow: /team-booking
+Disallow: /team-bookings
+Disallow: /profile
+Disallow: /security
+Disallow: /role-select
+Disallow: /player-type
+Disallow: /player
+Disallow: /force-password-change
+Disallow: /testing
+Disallow: /register-ground/status
+
+# The sitemap is served by the API (it needs live ground data the static
+# frontend build doesn't have) — see server/src/routes/sitemap.routes.js.
+# Update this to your deployed API origin's own /sitemap.xml.
+Sitemap: /sitemap.xml

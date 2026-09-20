@@ -1,0 +1,5 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { getCurrentUserOrRedirect } from "@/lib/server/current-user";
+import { getNotifications } from "@/lib/server/domain";
+export default async function NotificationsPage() { await getCurrentUserOrRedirect("/dashboard/player/notifications"); const rows = await getNotifications(); return <Card><CardHeader><CardTitle>Notifications</CardTitle><Badge tone="neutral">{rows.filter((row) => !row.isRead).length} unread</Badge></CardHeader><CardContent className="flex flex-col gap-3">{rows.length ? rows.map((row) => <div key={row.id} className="border-b border-border pb-3"><p className="font-medium text-text-primary">{row.title}</p><p className="text-sm text-text-secondary">{row.body}</p></div>) : <p className="text-sm text-text-secondary">No notifications.</p>}</CardContent></Card>; }

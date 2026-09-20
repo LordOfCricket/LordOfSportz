@@ -1,0 +1,47 @@
+// ============================================================================
+// SESSION DOMAIN — refresh token lifecycle
+// ----------------------------------------------------------------------------
+// Refresh tokens are opaque, cryptographically random strings, NOT JWTs.
+// Only a SHA-256 hash of the token is ever persisted (`tokenHash`) — the raw
+// token exists only in the response body at issuance time and in client
+// storage (httpOnly cookie on web, SecureStore on mobile). This is a
+// deliberate departure from Phase 2's JWT refresh token: unlike a JWT, an
+// opaque token can be looked up and revoked server-side, which rotation and
+// reuse detection both require. Access tokens remain short-lived JWTs
+// (unchanged) since they are never revoked individually — they simply expire
+// and get replaced via this table.
+//
+// Rotation model: each successful refresh marks the presented session
+// `revokedReason = ROTATED` and creates a new row carrying the same
+// `familyId`. Presenting an already-ROTATED token again is a reuse signal —
+// see apps/api's tournamentLifecycle-style single-purpose guard in
+// modules/auth/refresh.service.ts — and revokes every session in that family,
+// forcing full re-authentication.
+// ============================================================================
+
+enum RefreshSessionRevokedReason {
+  LOGOUT
+  ROTATED
+  REUSE_DETECTED
+}
+
+model RefreshSession {
+  id                  String                       @id @default(uuid()) @db.Uuid
+  userId              String                       @db.Uuid
+  /// Shared by every token in one continuous rotation chain, starting at login/register.
+  familyId            String                       @db.Uuid
+  tokenHash           String                       @unique
+  expiresAt           DateTime
+  createdAt           DateTime                     @default(now())
+  rotatedAt           DateTime?
+  revokedAt           DateTime?
+  revokedReason       RefreshSessionRevokedReason?
+  /// Audit reference only (no FK) to the session created when this one was rotated.
+  replacedBySessionId String?                      @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@map("refresh_sessions")
+}

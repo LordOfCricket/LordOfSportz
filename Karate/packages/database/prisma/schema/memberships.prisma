@@ -1,0 +1,110 @@
+// ============================================================================
+// MEMBERSHIP DOMAIN
+// ----------------------------------------------------------------------------
+// Academy affiliation is historical for both players and coaches: rows are
+// never overwritten in place. A new status change (LEFT, TRANSFERRED, ...)
+// inserts context onto the same row's timeline via timestamps, and moving to
+// a different academy creates a brand-new row rather than mutating the old
+// academy's row away. `AcademyMembershipRequest` models the invite/apply
+// handshake (either party can initiate) before a membership row exists or is
+// reactivated.
+// ============================================================================
+
+enum MembershipStatus {
+  INVITED
+  PENDING
+  ACTIVE
+  REJECTED
+  LEFT
+  TRANSFERRED
+  SUSPENDED
+}
+
+enum MembershipRequestInitiator {
+  ACADEMY
+  COACH
+  PLAYER
+}
+
+enum MembershipRequestTargetType {
+  COACH
+  PLAYER
+}
+
+enum MembershipRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+/// The handshake that precedes an active membership. Kept even after
+/// resolution as an audit trail of who asked whom, and when.
+model AcademyMembershipRequest {
+  id                String                      @id @default(uuid()) @db.Uuid
+  academyId         String                      @db.Uuid
+  targetType        MembershipRequestTargetType
+  playerId          String?                     @db.Uuid
+  coachId           String?                     @db.Uuid
+  initiatedBy       MembershipRequestInitiator
+  status            MembershipRequestStatus     @default(PENDING)
+  message           String?
+  respondedByUserId String?                     @db.Uuid
+  createdAt         DateTime                    @default(now())
+  respondedAt       DateTime?
+
+  academy Academy        @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  player  PlayerProfile? @relation("MembershipRequestPlayer", fields: [playerId], references: [id], onDelete: Cascade)
+  coach   CoachProfile?  @relation("MembershipRequestCoach", fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@index([academyId, status])
+  @@index([playerId])
+  @@index([coachId])
+  @@map("academy_membership_requests")
+}
+
+model AcademyPlayerMembership {
+  id                   String           @id @default(uuid()) @db.Uuid
+  academyId            String           @db.Uuid
+  playerId             String           @db.Uuid
+  status               MembershipStatus
+  requestedAt          DateTime         @default(now())
+  respondedAt          DateTime?
+  startedAt            DateTime?
+  endedAt              DateTime?
+  /// Points at the membership row this one continues, for TRANSFERRED chains.
+  previousMembershipId String?          @db.Uuid
+  notes                String?
+
+  academy  Academy                   @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  player   PlayerProfile             @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  previous AcademyPlayerMembership?  @relation("MembershipChain", fields: [previousMembershipId], references: [id], onDelete: SetNull)
+  next     AcademyPlayerMembership[] @relation("MembershipChain")
+
+  @@index([academyId, status])
+  @@index([playerId, status])
+  @@map("academy_player_memberships")
+}
+
+model AcademyCoachAffiliation {
+  id                    String           @id @default(uuid()) @db.Uuid
+  academyId             String           @db.Uuid
+  coachId               String           @db.Uuid
+  status                MembershipStatus
+  requestedAt           DateTime         @default(now())
+  respondedAt           DateTime?
+  startedAt             DateTime?
+  endedAt               DateTime?
+  previousAffiliationId String?          @db.Uuid
+  notes                 String?
+
+  academy  Academy                   @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  coach    CoachProfile              @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  previous AcademyCoachAffiliation?  @relation("AffiliationChain", fields: [previousAffiliationId], references: [id], onDelete: SetNull)
+  next     AcademyCoachAffiliation[] @relation("AffiliationChain")
+
+  @@index([academyId, status])
+  @@index([coachId, status])
+  @@map("academy_coach_affiliations")
+}

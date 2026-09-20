@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Karate Platform",
+    "slug": "karate-platform",
+    "scheme": "karateplatform",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.karateplatform.app",
+      "buildNumber": "1"
+    },
+    "android": {
+      "package": "com.karateplatform.app",
+      "versionCode": 1
+    },
+    "plugins": ["expo-router"]
+  }
+}

@@ -1,0 +1,1 @@
+LordOfCricket (LOC) is a full-stack cricket platform (Node/Postgres backend, web client, and React Native mobile app) covering match scoring, stats/analytics, tournaments, ground booking, and player/team engagement features.

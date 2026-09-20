@@ -1,0 +1,36 @@
+{
+  "name": "@karate/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Web application (Next.js App Router) for players, coaches, academies, and scorers.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@karate/constants": "workspace:*",
+    "@karate/types": "workspace:*",
+    "@karate/validation": "workspace:*",
+    "clsx": "^2.1.1",
+    "jose": "^5.9.6",
+    "next": "^14.2.13",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "socket.io-client": "^4.8.3",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "^14.2.13",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.11",
+    "typescript": "^5.6.2"
+  }
+}

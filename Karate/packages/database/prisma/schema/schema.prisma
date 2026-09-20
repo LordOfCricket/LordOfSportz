@@ -1,0 +1,15 @@
+// Root Prisma configuration for the Karate platform.
+// Domain models live in sibling files under this same `prisma/schema/` folder
+// (enabled by the `prismaSchemaFolder` preview feature) so the schema stays
+// organized by business domain instead of one monolithic file. See
+// docs/architecture/database-architecture.md for the domain map.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}

@@ -1,0 +1,80 @@
+// ============================================================================
+// OFFICIALS DOMAIN
+// ----------------------------------------------------------------------------
+// CRITICAL: OfficialFunction is NOT a login role. It is a per-tournament,
+// per-tatami assignment attached to a ScorerProfile. The same scorer can be
+// REFEREE at one tournament and TATAMI_MANAGER at the next — never store a
+// function permanently on the user or scorer profile.
+// ============================================================================
+
+enum OfficialFunction {
+  REFEREE
+  JUDGE
+  KANSA
+  SCORE_SUPERVISOR
+  TIMEKEEPER
+  VIDEO_REVIEW_JUDGE
+  TATAMI_MANAGER
+}
+
+/// INACTIVE = not yet opened for the day (mirrors the spec's "AVAILABLE").
+/// MAINTENANCE is distinct from PAUSED: PAUSED is a normal, expected break
+/// in play; MAINTENANCE means the mat itself is temporarily unusable.
+enum TatamiStatus {
+  INACTIVE
+  ACTIVE
+  PAUSED
+  MAINTENANCE
+  CLOSED
+}
+
+enum OfficialAssignmentStatus {
+  ASSIGNED
+  CONFIRMED
+  DECLINED
+  COMPLETED
+  REVOKED
+}
+
+model Tatami {
+  id           String       @id @default(uuid()) @db.Uuid
+  tournamentId String       @db.Uuid
+  label        String // e.g. "Tatami 1"
+  status       TatamiStatus @default(INACTIVE)
+
+  tournament          Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  officialAssignments OfficialAssignment[]
+  rounds              Round[]
+  bouts               Bout[]
+  boutSchedules       BoutSchedule[]
+
+  @@unique([tournamentId, label])
+  @@map("tatamis")
+}
+
+/// Never overwritten in place — REVOKED is a terminal status, not a delete,
+/// so who was ever assigned to what (and who revoked it) stays reconstructable.
+model OfficialAssignment {
+  id               String                   @id @default(uuid()) @db.Uuid
+  tournamentId     String                   @db.Uuid
+  competitionId    String?                  @db.Uuid
+  tatamiId         String?                  @db.Uuid
+  scorerProfileId  String                   @db.Uuid
+  function         OfficialFunction
+  status           OfficialAssignmentStatus @default(ASSIGNED)
+  startAt          DateTime?
+  endAt            DateTime?
+  assignedByUserId String                   @db.Uuid
+  assignedAt       DateTime                 @default(now())
+
+  tournament    Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  competition   Competition?  @relation(fields: [competitionId], references: [id], onDelete: SetNull)
+  tatami        Tatami?       @relation(fields: [tatamiId], references: [id], onDelete: SetNull)
+  scorerProfile ScorerProfile @relation(fields: [scorerProfileId], references: [id], onDelete: Cascade)
+  scoreEvents   ScoreEvent[]
+  judgeEvaluations JudgeEvaluation[]
+
+  @@index([tournamentId, function])
+  @@index([scorerProfileId])
+  @@map("official_assignments")
+}

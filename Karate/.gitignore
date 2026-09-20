@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Prisma
+packages/database/prisma/migrations/**/migration_lock.toml.bak
+
+# Expo / React Native
+apps/mobile/.expo/
+apps/mobile/.expo-shared/
+apps/mobile/ios/
+apps/mobile/android/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+
+# Turborepo / caches
+.turbo/
+
+# security hardening
+.env
+.env.*
+!.env.example
+!.env.test.example
+*.tar
+*.tar.gz
+*.tgz
+*.dump
+*.sqlite
+*.sqlite3
+*.bak
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+Dockerfile*
+docker-compose*

@@ -1,0 +1,196 @@
+// ============================================================================
+// SCORING DOMAIN
+// ----------------------------------------------------------------------------
+// Phase 1 does NOT implement the scoring engine. This lays the contract:
+// - RuleSet/RuleSetVersion make competition rules versioned and traceable to
+//   an official source, so historical bouts stay reproducible even after
+//   rules change (see docs/architecture/competition-architecture.md).
+// - ScoreEvent is one append-only, idempotent event per judge action.
+//   `clientOperationId` is the offline/reconnect idempotency key (section 33
+//   of the product spec): a scorer device can safely retry a submission
+//   after a dropped connection without double-scoring.
+// - Kumite and Kata do NOT share a scoring algorithm; `eventType` is
+//   discipline-specific and interpreted by discipline-specific domain
+//   services in apps/api, not by the database.
+// ============================================================================
+
+model RuleSet {
+  id               String     @id @default(uuid()) @db.Uuid
+  name             String // e.g. "WKF Kumite Rules"
+  discipline       Discipline
+  organizationName String // e.g. "WKF"
+  description      String?
+
+  versions RuleSetVersion[]
+
+  @@unique([name, discipline])
+  @@map("rule_sets")
+}
+
+/// Every version records its official source so scoring behavior is never
+/// "whatever the code happened to do" — it traces back to a dated rule
+/// document. Populate `sourceUrl`/`sourceDate` from the actual WKF (or other
+/// federation) publication before wiring real scoring logic to a version.
+model RuleSetVersion {
+  id            String    @id @default(uuid()) @db.Uuid
+  ruleSetId     String    @db.Uuid
+  version       String // e.g. "2023.1"
+  effectiveFrom DateTime
+  sourceUrl     String?
+  sourceDate    DateTime?
+  changeNotes   String?
+  createdAt     DateTime  @default(now())
+
+  ruleSet      RuleSet              @relation(fields: [ruleSetId], references: [id], onDelete: Restrict)
+  competitions Competition[]
+  kumiteConfiguration KumiteConfiguration?
+  kataConfiguration   KataConfiguration?
+  kataDefinitions     KataDefinition[]
+
+  @@unique([ruleSetId, version])
+  @@map("rule_set_versions")
+}
+
+enum BoutResultMethod {
+  POINTS
+  IPPON
+  DECISION
+  DISQUALIFICATION
+  WITHDRAWAL
+  WALKOVER
+  DRAW
+  NO_SHOW
+  INJURY
+}
+
+/// One row per judge/referee action. Never updated after insert; corrections
+/// are new events (e.g. a penalty reversal), preserving a full audit trail.
+model ScoreEvent {
+  id                   String     @id @default(uuid()) @db.Uuid
+  boutId               String     @db.Uuid
+  discipline           Discipline
+  eventType            String // discipline-specific: e.g. "YUKO" | "WAZA_ARI" | "IPPON" | "PENALTY_CHUI" (kumite); "JUDGE_SCORE" (kata)
+  targetPlayerId       String?    @db.Uuid
+  officialAssignmentId String?    @db.Uuid
+  points               Decimal?   @db.Decimal(6, 2)
+  /// Global monotonic order — DB-guaranteed, immune to millisecond timestamp ties. Always sort by this, never by recordedAt, for reproducible replay.
+  sequence             Int        @default(autoincrement())
+  /// Shared by every event written from the same authoritative decision (e.g. both athletes scoring in the same exchange per Art. 12.1.2). Lets state-replay treat them as one simultaneous unit instead of an arbitrary insertion order.
+  batchId              String?    @db.Uuid
+  /// Set only on a cancellation/correction event; the original event it reverses. The original row is never mutated or deleted.
+  reversesEventId      String?    @db.Uuid
+  /// Art. 12.2.9 — set only on a Video-Review-upheld score: the original (already-recorded) score event this one is simultaneous with, so replay evaluates them as one exchange for SENSHU purposes without ever mutating the original event's batchId.
+  simultaneousWithEventId String? @db.Uuid
+  /// Idempotency key supplied by the scoring client; retries with the same
+  /// key must not create a duplicate event.
+  clientOperationId    String?    @unique
+  recordedAt           DateTime   @default(now())
+
+  bout               Bout                @relation(fields: [boutId], references: [id], onDelete: Cascade)
+  officialAssignment OfficialAssignment? @relation(fields: [officialAssignmentId], references: [id], onDelete: SetNull)
+  reverses           ScoreEvent?         @relation("ScoreEventReversal", fields: [reversesEventId], references: [id], onDelete: SetNull)
+  reversedBy         ScoreEvent[]        @relation("ScoreEventReversal")
+  simultaneousWith   ScoreEvent?         @relation("ScoreEventSimultaneity", fields: [simultaneousWithEventId], references: [id], onDelete: SetNull)
+  simultaneousSource ScoreEvent[]        @relation("ScoreEventSimultaneity")
+  videoReviewResultOf   VideoReviewRequest[] @relation("VideoReviewResultingEvent")
+  videoReviewContestedBy VideoReviewRequest[] @relation("VideoReviewContestedEvent")
+
+  @@index([boutId, recordedAt])
+  @@map("score_events")
+}
+
+enum VideoReviewStatus {
+  REQUESTED
+  UPHELD
+  REJECTED
+  UNVIEWABLE
+}
+
+/// Art. 14 — one row per Coach video review request. Never a second result
+/// mechanism: an UPHELD request writes an ordinary ScoreEvent/SENSHU_ANNULLED
+/// event through the normal Kumite engine, referenced back here for history.
+model VideoReviewRequest {
+  id                 String            @id @default(uuid()) @db.Uuid
+  boutId             String            @db.Uuid
+  requestedByUserId  String            @db.Uuid
+  requestedForPlayerId String          @db.Uuid
+  requestedScoreType String? // "YUKO" | "WAZA_ARI" | "IPPON" — the Coach's claimed level, Art. 14.3
+  /// Snapshot at request time (Art. 14.8: review covers "the last 6 seconds before the bout was stopped for the request") — the most recent active score event, if any, at the moment this request was raised. Used to place an UPHELD score in its true historical exchange rather than "now" (Art. 12.2.9), without ever mutating that original event.
+  contestedEventId   String?           @db.Uuid
+  status             VideoReviewStatus @default(REQUESTED)
+  decidedByUserId    String?           @db.Uuid
+  resultingEventId   String?           @db.Uuid
+  decisionNotes      String?
+  requestedAt        DateTime          @default(now())
+  decidedAt          DateTime?
+
+  bout            Bout        @relation(fields: [boutId], references: [id], onDelete: Cascade)
+  requestedBy     User        @relation("VideoReviewRequestedBy", fields: [requestedByUserId], references: [id])
+  decidedBy       User?       @relation("VideoReviewDecidedBy", fields: [decidedByUserId], references: [id])
+  resultingEvent  ScoreEvent? @relation("VideoReviewResultingEvent", fields: [resultingEventId], references: [id], onDelete: SetNull)
+  contestedEvent  ScoreEvent? @relation("VideoReviewContestedEvent", fields: [contestedEventId], references: [id], onDelete: SetNull)
+
+  @@index([boutId])
+  @@map("video_review_requests")
+}
+
+/// One row per RuleSetVersion — keeps Kumite scoring rule-driven instead of
+/// hard-coded, per the verified WKF Kumite Competition Rules (see ruleSetVersion.sourceUrl/sourceDate).
+model KumiteConfiguration {
+  id                      String   @id @default(uuid()) @db.Uuid
+  ruleSetVersionId        String   @unique @db.Uuid
+  yukoPoints              Int      @default(1)
+  wazaAriPoints           Int      @default(2)
+  ipponPoints             Int      @default(3)
+  clearLeadPoints         Int      @default(8)
+  senshuEnabled           Boolean  @default(true)
+  chuiLimit               Int      @default(3)
+  passivityProtectedSeconds Int    @default(15)
+  videoReviewEnabled      Boolean  @default(false)
+  twoJudgeMode            Boolean  @default(false)
+  panelJudgeCount         Int      @default(4)
+
+  ruleSetVersion RuleSetVersion @relation(fields: [ruleSetVersionId], references: [id], onDelete: Cascade)
+
+  @@map("kumite_configurations")
+}
+
+/// Mutable only while `isFinal` is false — once finalized, this row is
+/// never updated again through Phase 14's API (a later correction workflow
+/// is a distinct, explicitly-audited concern, not implemented here).
+model BoutResult {
+  id                String           @id @default(uuid()) @db.Uuid
+  boutId            String           @unique @db.Uuid
+  winnerPlayerId    String?          @db.Uuid
+  /// Team Kata (Art. 3.5) — set instead of winnerPlayerId when the Bout's two sides are KataTeams, never both.
+  winnerTeamId      String?          @db.Uuid
+  method            BoutResultMethod
+  reason            String?
+  finalScoreRed     Int?
+  finalScoreBlue    Int?
+  isFinal           Boolean          @default(false)
+  confirmedByUserId String?          @db.Uuid
+  decidedAt         DateTime         @default(now())
+    resultCorrections BoutResultCorrection[]
+
+  bout       Bout           @relation(fields: [boutId], references: [id], onDelete: Cascade)
+  winner     PlayerProfile? @relation("BoutWinner", fields: [winnerPlayerId], references: [id], onDelete: SetNull)
+  winnerTeam KataTeam?      @relation(fields: [winnerTeamId], references: [id], onDelete: SetNull)
+
+  @@map("bout_results")
+}
+
+model BoutResultCorrection {
+  id               String   @id @default(uuid()) @db.Uuid
+  boutResultId     String   @db.Uuid
+  correctedByUserId String   @db.Uuid
+  reason           String
+  previousValue    Json
+  correctedValue   Json
+  createdAt        DateTime @default(now())
+
+  boutResult BoutResult @relation(fields: [boutResultId], references: [id], onDelete: Cascade)
+
+  @@index([boutResultId, createdAt])
+  @@map("bout_result_corrections")
+}

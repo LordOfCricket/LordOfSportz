@@ -1,0 +1,111 @@
+// ============================================================================
+// PLATFORM DOMAIN — notifications, protests, incidents, audit log
+// ============================================================================
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  type      String
+  title     String
+  body      String?
+  data      Json?
+  isRead    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+enum ProtestCategory {
+  SCORING
+  ELIGIBILITY
+  CONDUCT
+  OTHER
+}
+
+enum ProtestStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  UPHELD
+  REJECTED
+  WITHDRAWN
+}
+
+model Protest {
+  id               String          @id @default(uuid()) @db.Uuid
+  tournamentId     String          @db.Uuid
+  boutId           String?         @db.Uuid
+  raisedByUserId   String          @db.Uuid
+  category         ProtestCategory
+  description      String
+  status           ProtestStatus   @default(SUBMITTED)
+  resolution       String?
+  resolvedByUserId String?         @db.Uuid
+  createdAt        DateTime        @default(now())
+  resolvedAt       DateTime?
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  bout       Bout?      @relation(fields: [boutId], references: [id], onDelete: SetNull)
+  raisedBy   User       @relation("ProtestRaisedBy", fields: [raisedByUserId], references: [id])
+  resolvedBy User?      @relation("ProtestResolvedBy", fields: [resolvedByUserId], references: [id])
+
+  @@index([tournamentId, status])
+  @@map("protests")
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  CLOSED
+}
+
+model Incident {
+  id               String           @id @default(uuid()) @db.Uuid
+  tournamentId     String?          @db.Uuid
+  boutId           String?          @db.Uuid
+  reportedByUserId String           @db.Uuid
+  severity         IncidentSeverity @default(LOW)
+  category         String
+  description      String
+  status           IncidentStatus   @default(OPEN)
+  createdAt        DateTime         @default(now())
+  resolvedAt       DateTime?
+
+  tournament Tournament? @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+  bout       Bout?       @relation(fields: [boutId], references: [id], onDelete: SetNull)
+  reportedBy User        @relation(fields: [reportedByUserId], references: [id])
+
+  @@index([status, severity])
+  @@map("incidents")
+}
+
+/// Append-only. Never updated, never deleted by application code.
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actorUserId String?  @db.Uuid
+  action      String // e.g. "TOURNAMENT_STATUS_CHANGED"
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([actorUserId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

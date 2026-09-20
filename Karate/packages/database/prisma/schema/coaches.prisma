@@ -1,0 +1,30 @@
+// ============================================================================
+// COACH DOMAIN
+// ----------------------------------------------------------------------------
+// A coach creates their own profile independently of any academy, then
+// requests to affiliate with one or more academies over time (see
+// AcademyCoachAffiliation in memberships.prisma). Affiliation history must
+// never be destroyed when a coach moves academies.
+// ============================================================================
+
+model CoachProfile {
+  id          String        @id @default(uuid()) @db.Uuid
+  userId      String        @unique @db.Uuid
+  displayName String
+  photoUrl    String?
+  bio         String?
+  yearsActive Int?
+  status      ProfileStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
+
+  user                User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  styles              KarateStyle[]              @relation("CoachStyles")
+  academyAffiliations AcademyCoachAffiliation[]
+  stats               CoachStats[]
+  membershipRequests  AcademyMembershipRequest[] @relation("MembershipRequestCoach")
+
+  @@index([userId])
+  @@map("coach_profiles")
+}

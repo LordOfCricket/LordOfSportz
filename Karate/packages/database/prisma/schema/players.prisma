@@ -1,0 +1,43 @@
+// ============================================================================
+// PLAYER DOMAIN
+// ============================================================================
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+model PlayerProfile {
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String        @unique @db.Uuid
+  displayName    String
+  dateOfBirth    DateTime
+  gender         Gender
+  photoUrl       String?
+  primaryStyleId String?       @db.Uuid
+  bio            String?
+  status         ProfileStatus @default(ACTIVE)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  deletedAt      DateTime?
+
+  user                  User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  primaryStyle          KarateStyle?               @relation("PlayerPrimaryStyle", fields: [primaryStyleId], references: [id], onDelete: SetNull)
+  styles                KarateStyle[]              @relation("PlayerStyles")
+  academyMemberships    AcademyPlayerMembership[]
+  beltHistory           PlayerBeltHistory[]
+  registrations         Registration[]
+  redBouts              Bout[]                     @relation("BoutRedPlayer")
+  blueBouts             Bout[]                     @relation("BoutBluePlayer")
+  boutResultsWon        BoutResult[]               @relation("BoutWinner")
+  stats                 PlayerStats[]
+  rankingEntries        RankingEntry[]
+  rankingEvents         RankingPointsEvent[]
+  membershipRequests    AcademyMembershipRequest[] @relation("MembershipRequestPlayer")
+  gradingParticipations GradingParticipant[]
+  drawSeeds             DrawSeed[]
+  kataTeamMemberships   KataTeamMember[]
+
+  @@index([userId])
+  @@map("player_profiles")
+}

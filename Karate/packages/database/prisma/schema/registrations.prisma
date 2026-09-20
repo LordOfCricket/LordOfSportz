@@ -1,0 +1,155 @@
+// ============================================================================
+// REGISTRATION / ELIGIBILITY / MEDICAL / WEIGH-IN DOMAIN
+// ----------------------------------------------------------------------------
+// Each concern is its own 1:1 table off Registration rather than columns
+// bolted onto one row. This keeps sensitive medical data isolated (its own
+// table, minimal fields, easy to apply stricter access control/retention
+// policy later) and keeps the eligibility/weigh-in workflows independently
+// auditable.
+// ============================================================================
+
+enum RegistrationStatus {
+  SUBMITTED
+  VERIFIED
+  REJECTED
+  WITHDRAWN
+  CONFIRMED
+}
+
+enum MedicalClearanceStatus {
+  PENDING
+  CLEARED
+  NOT_CLEARED
+  EXPIRED
+}
+
+enum WeightUnit {
+  KG
+  LB
+}
+
+/// Mirrors packages/types WEIGH_IN_STATUSES. Never client-set — see
+/// apps/api/src/modules/registrations/weighIn.service.ts.
+enum WeighInStatus {
+  PENDING
+  PASSED
+  FAILED
+  REWEIGH_REQUIRED
+}
+
+/// Mirrors packages/types ELIGIBILITY_STATUSES. NOT_CHECKED is the row's
+/// default before the engine has run at all; PENDING means the engine ran
+/// but a later authoritative input (e.g. an official weight) doesn't exist
+/// yet; MANUAL_REVIEW/ELIGIBLE/INELIGIBLE beyond the engine's own automatic
+/// output can only be set through the authorized override path.
+enum EligibilityStatus {
+  NOT_CHECKED
+  PENDING
+  ELIGIBLE
+  INELIGIBLE
+  MANUAL_REVIEW
+}
+
+model Registration {
+  id                        String             @id @default(uuid()) @db.Uuid
+  competitionId             String             @db.Uuid
+  playerId                  String             @db.Uuid
+  representingAcademyId     String?            @db.Uuid
+  status                    RegistrationStatus @default(SUBMITTED)
+  submittedByUserId         String             @db.Uuid
+  /// Immutable snapshot of the player's VERIFIED current belt grade at the
+  /// moment of registration (resolved server-side — see beltHistory.service).
+  /// Never updated after creation, so a later regrade cannot rewrite this
+  /// historical fact. Restrict (not SetNull/Cascade): a grade that was ever
+  /// snapshotted into a registration can never be deleted.
+  beltGradeIdAtRegistration String?            @db.Uuid
+  submittedAt               DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+
+  competition             Competition       @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  player                  PlayerProfile     @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  representingAcademy     Academy?          @relation(fields: [representingAcademyId], references: [id], onDelete: SetNull)
+  beltGradeAtRegistration BeltGrade?        @relation("RegistrationBeltSnapshot", fields: [beltGradeIdAtRegistration], references: [id], onDelete: Restrict)
+  eligibilityCheck        EligibilityCheck?
+  medicalClearance        MedicalClearance?
+  weighInAttempts         WeighInAttempt[]
+  drawSeeds               DrawSeed[]
+
+  @@unique([competitionId, playerId])
+  @@index([status])
+  @@index([playerId])
+  @@index([representingAcademyId])
+  @@map("registrations")
+}
+
+/// One row per registration, owned entirely by the eligibility engine
+/// (apps/api/src/domain/eligibilityEngine.ts) — never written to directly by
+/// a controller. `checkedByUserId` stays null for automatic evaluations and
+/// is only set when an authorized actor manually overrides the result.
+model EligibilityCheck {
+  id              String            @id @default(uuid()) @db.Uuid
+  registrationId  String            @unique @db.Uuid
+  status          EligibilityStatus @default(NOT_CHECKED)
+  reasonCodes     String[]
+  checkedByUserId String?           @db.Uuid
+  checkedAt       DateTime?
+  notes           String?
+  updatedAt       DateTime          @updatedAt
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@map("eligibility_checks")
+}
+
+/// Deliberately minimal: a status + who/when + an optional short
+/// administrative note, never a document, diagnosis, or other raw medical
+/// detail — that kind of content belongs in a dedicated, access-controlled
+/// records system outside this platform, not here. `verifiedByUserId` is a
+/// real authorized-actor reference (never a free-text name) so the audit
+/// trail is trustworthy. `notes` is never returned by the generic
+/// registration read paths — see registrations.service#toDto.
+model MedicalClearance {
+  id               String                 @id @default(uuid()) @db.Uuid
+  registrationId   String                 @unique @db.Uuid
+  status           MedicalClearanceStatus @default(PENDING)
+  verifiedByUserId String?                @db.Uuid
+  verifiedAt       DateTime?
+  expiresAt        DateTime?
+  notes            String?
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  verifiedBy   User?        @relation(fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+
+  @@map("medical_clearances")
+}
+
+/// Append-only attempt history — a failed or superseded attempt is NEVER
+/// updated or deleted, a new row is inserted instead (mirrors
+/// PlayerBeltHistory's append-only pattern). `measuredWeightKg` is always
+/// normalized to kilograms regardless of `unit`, so every comparison
+/// (category bounds, eligibility) has exactly one source of truth; `unit`
+/// only records what was originally entered, for display fidelity.
+/// `status` is always server-computed from the measurement — see
+/// weighIn.service — except REWEIGH_REQUIRED, which is an explicit
+/// organizer procedural call, never a fabricated pass/fail.
+model WeighInAttempt {
+  id               String        @id @default(uuid()) @db.Uuid
+  registrationId   String        @db.Uuid
+  attemptNumber    Int
+  measuredWeightKg Decimal?      @db.Decimal(5, 2)
+  unit             WeightUnit    @default(KG)
+  status           WeighInStatus @default(PENDING)
+  reason           String?
+  verifiedByUserId String?       @db.Uuid
+  measuredAt       DateTime      @default(now())
+  createdAt        DateTime      @default(now())
+
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+  verifiedBy   User?        @relation(fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([registrationId, attemptNumber])
+  @@index([registrationId])
+  @@map("weigh_in_attempts")
+}

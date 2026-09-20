@@ -1,0 +1,158 @@
+// ============================================================================
+// KATA DOMAIN
+// ----------------------------------------------------------------------------
+// Deliberately separate from the Kumite domain (scoring.prisma) — Kata uses a
+// judge-vote-majority system (WKF Kata Competition Rules 2026.0, Art. 5.4-5.5),
+// not a point/penalty ledger. Both disciplines share the generic Bout model
+// (one Bout per one-on-one Kata "bout", Art. 3.1.2/3.2.1) and OfficialAssignment
+// for judge scoping, exactly like Kumite — no second Bout model.
+// ============================================================================
+
+/// A reference row per performable Kata (Art. 5.1: "Only Kata from the WKF
+/// official Kata list may be performed"). Never a free-text client value —
+/// see kata.service.ts validation. Versioned per RuleSetVersion so a change
+/// to the official list never reinterprets a historical performance.
+model KataDefinition {
+  id               String   @id @default(uuid()) @db.Uuid
+  ruleSetVersionId String   @db.Uuid
+  name             String
+  styleNote        String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  ruleSetVersion RuleSetVersion    @relation(fields: [ruleSetVersionId], references: [id], onDelete: Cascade)
+  redPerformances   KataPerformance[] @relation("KataPerformanceRed")
+  bluePerformances  KataPerformance[] @relation("KataPerformanceBlue")
+
+  @@unique([ruleSetVersionId, name])
+  @@map("kata_definitions")
+}
+
+/// One row per RuleSetVersion — panel size, score scale and repetition rules
+/// are rule-set-driven (Art. 4.1, 5.2, 5.4), never hard-coded in services.
+model KataConfiguration {
+  id                     String @id @default(uuid()) @db.Uuid
+  ruleSetVersionId       String @unique @db.Uuid
+  panelSizeElimination   Int    @default(5)
+  panelSizeRoundRobin    Int    @default(7)
+  scoreMin               Decimal @default(5.0) @db.Decimal(3, 1)
+  scoreMax               Decimal @default(10.0) @db.Decimal(3, 1)
+  scoreIncrement         Decimal @default(0.1) @db.Decimal(3, 1)
+  maxKataRepeats         Int    @default(2)
+  kikenVotes             Int    @default(4)
+
+  ruleSetVersion RuleSetVersion @relation(fields: [ruleSetVersionId], references: [id], onDelete: Cascade)
+
+  @@map("kata_configurations")
+}
+
+/// 1:1 with Bout — the Kata-specific facts a generic Bout doesn't carry:
+/// which Kata each side announced (Art. 6.1) and prior-round repetition
+/// history (Art. 5.2.1: no Kata twice in a row, none more than twice total).
+model KataPerformance {
+  id                  String    @id @default(uuid()) @db.Uuid
+  boutId              String    @unique @db.Uuid
+  redKataDefinitionId  String?  @db.Uuid
+  blueKataDefinitionId String?  @db.Uuid
+  redAnnouncedAt      DateTime?
+  blueAnnouncedAt     DateTime?
+  /// Art. 3.5.4 — set only for Team medal matches; judges then also evaluate a Bunkai phase (Art. 5.4.3), equal importance to the Kata.
+  bunkaiRequired      Boolean   @default(false)
+
+  bout              Bout            @relation(fields: [boutId], references: [id], onDelete: Cascade)
+  redKataDefinition  KataDefinition? @relation("KataPerformanceRed", fields: [redKataDefinitionId], references: [id], onDelete: SetNull)
+  blueKataDefinition KataDefinition? @relation("KataPerformanceBlue", fields: [blueKataDefinitionId], references: [id], onDelete: SetNull)
+  evaluations       JudgeEvaluation[]
+
+  @@map("kata_performances")
+}
+
+enum KataEvaluationPhase {
+  KATA
+  BUNKAI
+}
+
+/// One row per judge action. Never updated after insert — a correction is a
+/// new row referencing the one it supersedes (Art. "original judge input
+/// must never be silently overwritten" per product spec). Mirrors ScoreEvent's
+/// append-only design without sharing its Kumite-specific columns.
+/// Exactly one of targetPlayerId/targetTeamId is set, matching whichever the
+/// parent Bout uses (individual vs Team Kata) — validated in kata.service.ts.
+model JudgeEvaluation {
+  id                   String   @id @default(uuid()) @db.Uuid
+  kataPerformanceId    String   @db.Uuid
+  officialAssignmentId String   @db.Uuid
+  targetPlayerId       String?  @db.Uuid
+  targetTeamId         String?  @db.Uuid
+  /// Art. 3.5.4/5.4.3 — Team medal matches add a Bunkai demonstration, "given equal importance as the Kata itself." Default KATA covers every individual and non-medal Team performance.
+  phase                KataEvaluationPhase @default(KATA)
+  /// 5.0-10.0 in 0.1 steps (Art. 5.4.1); null when isDisqualification is true.
+  score                Decimal? @db.Decimal(3, 1)
+  isDisqualification   Boolean  @default(false)
+  /// DB-guaranteed monotonic order — same rationale as ScoreEvent.sequence.
+  sequence             Int      @default(autoincrement())
+  /// Set only on a correction row; the evaluation it supersedes. The original row is never mutated.
+  correctionOfId       String?  @db.Uuid
+  clientOperationId    String?  @unique
+  recordedAt           DateTime @default(now())
+
+  kataPerformance    KataPerformance    @relation(fields: [kataPerformanceId], references: [id], onDelete: Cascade)
+  officialAssignment OfficialAssignment @relation(fields: [officialAssignmentId], references: [id], onDelete: Restrict)
+  targetTeam         KataTeam?          @relation(fields: [targetTeamId], references: [id], onDelete: SetNull)
+  correctionOf       JudgeEvaluation?   @relation("JudgeEvaluationCorrection", fields: [correctionOfId], references: [id], onDelete: SetNull)
+  correctedBy        JudgeEvaluation[]  @relation("JudgeEvaluationCorrection")
+
+  @@index([kataPerformanceId, sequence])
+  @@map("judge_evaluations")
+}
+
+enum KataTeamStatus {
+  ACTIVE
+  WITHDRAWN
+}
+
+enum KataTeamMemberStatus {
+  ACTIVE
+  REMOVED
+}
+
+/// Art. 3.5 — a Kata Team of 3-4 Athletes (3 compete per round). Scoped to
+/// one academy and one competition, mirroring how individual Registration
+/// is competition-scoped.
+model KataTeam {
+  id                String         @id @default(uuid()) @db.Uuid
+  academyId         String         @db.Uuid
+  competitionId     String         @db.Uuid
+  name              String
+  status            KataTeamStatus @default(ACTIVE)
+  createdByUserId   String         @db.Uuid
+  createdAt         DateTime       @default(now())
+
+  academy     Academy       @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  competition Competition   @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  members     KataTeamMember[]
+  redBouts    Bout[]           @relation("BoutRedTeam")
+  blueBouts   Bout[]           @relation("BoutBlueTeam")
+  evaluations JudgeEvaluation[]
+  boutResultsWon BoutResult[]
+
+  @@unique([competitionId, name])
+  @@map("kata_teams")
+}
+
+/// Art. 3.5.1 — "consist of 3 or 4 Athletes." Membership status preserves
+/// history (a REMOVED member's prior performances stay attributable) instead
+/// of ever deleting the row, matching AcademyPlayerMembership's convention.
+model KataTeamMember {
+  id       String               @id @default(uuid()) @db.Uuid
+  teamId   String               @db.Uuid
+  playerId String               @db.Uuid
+  status   KataTeamMemberStatus @default(ACTIVE)
+  joinedAt DateTime             @default(now())
+
+  team   KataTeam      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  player PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Restrict)
+
+  @@unique([teamId, playerId])
+  @@map("kata_team_members")
+}

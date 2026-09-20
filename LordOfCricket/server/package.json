@@ -1,0 +1,61 @@
+{
+  "name": "server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "postinstall": "prisma generate",
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "db:migrate": "node src/config/migrate.js",
+    "db:seed": "node src/config/seed.js",
+    "db:seed:players": "node src/config/seedPlayers.js",
+    "db:seed:ground": "node src/scripts/seedGroundAndCanteen.js",
+    "db:seed:ground-membership": "node src/scripts/seedGroundMembership.js",
+    "db:seed:merchandise": "node src/scripts/seedMerchandise.js",
+    "db:bootstrap-admin": "node src/scripts/bootstrapSuperAdmin.js",
+    "commentary:rebuild": "node src/scripts/rebuildCommentary.js",
+    "migrate:gallery": "node src/scripts/migrateGalleryToPostgres.js",
+    "migrate:ai-insights": "node src/scripts/migrateAiInsightsToPostgres.js",
+    "migrate:menu-items": "node src/scripts/migrateMenuItemsToPostgres.js",
+    "migrate:today-menu": "node src/scripts/migrateTodayMenuToPostgres.js",
+    "migrate:orders": "node src/scripts/migrateOrdersToPostgres.js",
+    "backup:mongo": "node src/scripts/exportMongoBackup.js",
+    "backup:postgres": "node src/scripts/backupPostgres.js",
+    "restore:postgres": "node src/scripts/restorePostgres.js",
+    "test": "node --test \"src/domain/**/*.test.js\" \"src/utils/**/*.test.js\"",
+    "test:integration": "node --test --test-concurrency=1 \"src/tests/integration/**/*.test.js\""
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0",
+    "@prisma/client": "6.19.3",
+    "@sendgrid/mail": "^8.1.6",
+    "@simplewebauthn/server": "^13.3.2",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^2.10.0",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cookie-signature": "^1.0.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.1",
+    "express-rate-limit": "^8.6.2",
+    "googleapis": "^174.0.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.24.2",
+    "multer": "^2.2.0",
+    "otplib": "^13.4.1",
+    "pg": "^8.22.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.7.2",
+    "twilio": "^6.1.0"
+  },
+  "devDependencies": {
+    "prisma": "6.19.3",
+    "socket.io-client": "^4.8.3"
+  }
+}

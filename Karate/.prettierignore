@@ -1,0 +1,7 @@
+node_modules
+.next
+dist
+build
+.expo
+pnpm-lock.yaml
+packages/database/prisma/schema/*.prisma

@@ -1,0 +1,143 @@
+// ============================================================================
+// DRAW / BRACKET DOMAIN
+// ----------------------------------------------------------------------------
+// A competition's draw can be regenerated (e.g. after a late withdrawal), so
+// draws are versioned rather than a single mutable row — old versions stay
+// for audit, `isActive` marks the current one.
+// ============================================================================
+
+enum BracketType {
+  SINGLE_ELIMINATION
+  ROUND_ROBIN
+  POOL
+}
+
+enum DrawStatus {
+  DRAFT
+  PUBLISHED
+  LOCKED
+  SUPERSEDED
+}
+
+/// How this draw's participant order was determined. Stored per-draw (the
+/// overall strategy requested) AND per-seed on DrawSeed (since a MANUAL
+/// draw can still leave some entrants unseeded/randomly placed).
+enum SeedSource {
+  MANUAL
+  RANKING
+  RANDOM
+  NONE
+}
+
+model Draw {
+  id                String      @id @default(uuid()) @db.Uuid
+  competitionId     String      @db.Uuid
+  version           Int
+  bracketType       BracketType
+  status            DrawStatus  @default(DRAFT)
+  seedingStrategy   SeedSource  @default(NONE)
+  isActive          Boolean     @default(true)
+  generatedByUserId String      @db.Uuid
+  generatedAt       DateTime    @default(now())
+
+  competition Competition @relation(fields: [competitionId], references: [id], onDelete: Cascade)
+  rounds      Round[]
+  seeds       DrawSeed[]
+
+  @@unique([competitionId, version])
+  @@index([competitionId, isActive])
+  @@map("draws")
+}
+
+/// One row per entrant in a specific draw version — never overwritten;
+/// regenerating creates a new Draw version with its own fresh seed rows, so
+/// the exact entrant list/seeding of every past version stays reconstructable.
+/// Restrict (not Cascade/SetNull) on registration/player: an entrant that
+/// was ever part of a generated draw can never be silently deleted out from
+/// under that historical record.
+model DrawSeed {
+  id             String     @id @default(uuid()) @db.Uuid
+  drawId         String     @db.Uuid
+  registrationId String     @db.Uuid
+  playerId       String     @db.Uuid
+  seedNumber     Int?
+  seedSource     SeedSource @default(NONE)
+  position       Int
+
+  draw         Draw          @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  registration Registration  @relation(fields: [registrationId], references: [id], onDelete: Restrict)
+  player       PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Restrict)
+
+  @@unique([drawId, registrationId])
+  @@unique([drawId, position])
+  @@map("draw_seeds")
+}
+
+model Round {
+  id          String    @id @default(uuid()) @db.Uuid
+  drawId      String    @db.Uuid
+  tatamiId    String?   @db.Uuid
+  roundNumber Int
+  name        String? // e.g. "Quarterfinal"
+  scheduledAt DateTime?
+
+  draw   Draw    @relation(fields: [drawId], references: [id], onDelete: Cascade)
+  tatami Tatami? @relation(fields: [tatamiId], references: [id], onDelete: SetNull)
+  bouts  Bout[]
+
+  @@unique([drawId, roundNumber])
+  @@map("rounds")
+}
+
+/// RESUMED is deliberately not a distinct persisted status — resuming a
+/// paused bout returns it to IN_PROGRESS; the resume action itself is what
+/// gets audited (see bouts.service#resumeBout), not a separate state.
+enum BoutStatus {
+  SCHEDULED
+  CALLED
+  READY
+  IN_PROGRESS
+  PAUSED
+  FINISHED
+  UNDER_REVIEW
+  FINALIZED
+  CANCELLED
+}
+
+model Bout {
+  id             String     @id @default(uuid()) @db.Uuid
+  roundId        String     @db.Uuid
+  tatamiId       String?    @db.Uuid
+  sequenceNumber Int
+  redPlayerId    String?    @db.Uuid
+  bluePlayerId   String?    @db.Uuid
+  /// Team Kata (Art. 3.5) — exactly one of (redPlayerId+bluePlayerId) or (redTeamId+blueTeamId) is set, validated in kata.service.ts, never at the DB level.
+  redTeamId      String?    @db.Uuid
+  blueTeamId     String?    @db.Uuid
+  status         BoutStatus @default(SCHEDULED)
+  startedAt      DateTime?
+  endedAt        DateTime?
+  cancelReason   String?
+  /// Server-authoritative clock — never trust a client-reported elapsed/remaining time.
+  clockElapsedSeconds Int      @default(0)
+  clockRunning        Boolean  @default(false)
+  clockLastStartedAt  DateTime?
+
+  round         Round          @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  tatami        Tatami?        @relation(fields: [tatamiId], references: [id], onDelete: SetNull)
+  redPlayer     PlayerProfile? @relation("BoutRedPlayer", fields: [redPlayerId], references: [id], onDelete: SetNull)
+  bluePlayer    PlayerProfile? @relation("BoutBluePlayer", fields: [bluePlayerId], references: [id], onDelete: SetNull)
+  redTeam       KataTeam?      @relation("BoutRedTeam", fields: [redTeamId], references: [id], onDelete: SetNull)
+  blueTeam      KataTeam?      @relation("BoutBlueTeam", fields: [blueTeamId], references: [id], onDelete: SetNull)
+  scoreEvents   ScoreEvent[]
+  result        BoutResult?
+  protests      Protest[]
+  incidents     Incident[]
+  boutSchedules BoutSchedule[]
+  videoReviewRequests VideoReviewRequest[]
+  kataPerformance     KataPerformance?
+
+  @@unique([roundId, sequenceNumber])
+  @@index([status])
+  @@map("bouts")
+}

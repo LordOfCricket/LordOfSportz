@@ -1,0 +1,56 @@
+node_modules/
+.env
+.env.*
+!.env.example
+!client/.env.production
+
+# Build outputs
+dist/
+build/
+
+# User-uploaded content
+uploads/*
+!uploads/.gitkeep
+
+# MongoDB backup exports
+backups/
+server/backups/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Old packaged backups
+*.tar
+*.tar.gz
+*.zip
+
+# Coverage
+coverage/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Local MCP configuration and API keys
+.mcp.json
+# security hardening
+.env
+.env.*
+!.env.example
+!.env.test.example
+*.tar
+*.tar.gz
+*.tgz
+*.dump
+*.sqlite
+*.sqlite3
+*.bak
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+Dockerfile*
+docker-compose*

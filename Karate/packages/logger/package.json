@@ -1,0 +1,19 @@
+{
+  "name": "@karate/logger",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Structured, environment-aware logging foundation shared by backend services.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pino": "^9.4.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^11.2.2",
+    "typescript": "^5.6.2"
+  }
+}

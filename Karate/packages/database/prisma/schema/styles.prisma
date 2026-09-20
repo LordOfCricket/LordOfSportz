@@ -1,0 +1,28 @@
+// ============================================================================
+// KARATE STYLE DOMAIN
+// ----------------------------------------------------------------------------
+// Styles are data, not an enum, because new styles/federations must be
+// addable without a schema migration. Each style owns one or more belt
+// systems (different federations may grade the same style differently).
+// ============================================================================
+
+model KarateStyle {
+  id                   String       @id @default(uuid()) @db.Uuid
+  name                 String       @unique // e.g. "Shotokan", "Goju-Ryu"
+  description          String?
+  isActive             Boolean      @default(true)
+  /// Empty = no restriction (competes in every discipline). Some
+  /// traditional styles/federations only recognize Kata or only Kumite —
+  /// read by the eligibility engine, never by a client.
+  supportedDisciplines Discipline[]
+  createdAt            DateTime     @default(now())
+
+  beltSystems       BeltSystem[]
+  categories        Category[]
+  rankingSystems    RankingSystem[]
+  primaryForPlayers PlayerProfile[] @relation("PlayerPrimaryStyle")
+  players           PlayerProfile[] @relation("PlayerStyles")
+  coaches           CoachProfile[]  @relation("CoachStyles")
+
+  @@map("karate_styles")
+}

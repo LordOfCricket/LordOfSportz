@@ -1,0 +1,65 @@
+// ============================================================================
+// SCHEDULING DOMAIN
+// ----------------------------------------------------------------------------
+// Versioned exactly like Draw: a Schedule is never edited in place. A delay
+// or revision creates a NEW Schedule version with its own full set of
+// BoutSchedule rows; the previous version's rows are untouched, so "what did
+// the schedule say before the delay" stays answerable. Only the
+// `isActive` version is used for "what's happening now" queries.
+//
+// Round.scheduledAt/Round.tatamiId and Bout.tatamiId (draws.prisma, Phase 1)
+// are intentionally left unused by this domain — BoutSchedule is the single
+// authoritative source for bout timing/tatami, so there is never a second
+// place that can drift out of sync with it.
+// ============================================================================
+
+enum ScheduleStatus {
+  DRAFT
+  PUBLISHED
+  IN_PROGRESS
+  DELAYED
+  COMPLETED
+  CANCELLED
+}
+
+model Schedule {
+  id                String         @id @default(uuid()) @db.Uuid
+  tournamentId      String         @db.Uuid
+  version           Int
+  status            ScheduleStatus @default(DRAFT)
+  isActive          Boolean        @default(true)
+  delayMinutes      Int            @default(0)
+  generatedByUserId String         @db.Uuid
+  generatedAt       DateTime       @default(now())
+  notes             String?
+
+  tournament Tournament     @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  entries    BoutSchedule[]
+
+  @@unique([tournamentId, version])
+  @@index([tournamentId, isActive])
+  @@map("schedules")
+}
+
+/// One row per scheduled bout, scoped to one Schedule version. Restrict on
+/// bout: a bout that was ever scheduled can never be deleted out from under
+/// its own schedule history.
+model BoutSchedule {
+  id                       String   @id @default(uuid()) @db.Uuid
+  scheduleId               String   @db.Uuid
+  boutId                   String   @db.Uuid
+  tatamiId                 String?  @db.Uuid
+  scheduledAt              DateTime
+  estimatedDurationMinutes Int
+  sequenceOrder            Int
+  createdAt                DateTime @default(now())
+
+  schedule Schedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  bout     Bout     @relation(fields: [boutId], references: [id], onDelete: Restrict)
+  tatami   Tatami?  @relation(fields: [tatamiId], references: [id], onDelete: SetNull)
+
+  @@unique([scheduleId, boutId])
+  @@index([boutId])
+  @@index([scheduleId, tatamiId, sequenceOrder])
+  @@map("bout_schedules")
+}

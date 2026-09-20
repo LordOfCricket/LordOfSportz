@@ -1,0 +1,93 @@
+// ============================================================================
+// RANKING DOMAIN
+// ============================================================================
+
+model RankingSystem {
+  id            String     @id @default(uuid()) @db.Uuid
+  name          String
+  discipline    Discipline
+  karateStyleId String?    @db.Uuid
+  description   String?
+  strategyVersion Int      @default(1)
+  strategy      Json?
+
+  karateStyle KarateStyle?  @relation(fields: [karateStyleId], references: [id], onDelete: SetNull)
+  seasons     RankingSeason[]
+
+  @@map("ranking_systems")
+}
+
+model RankingSeason {
+  id              String  @id @default(uuid()) @db.Uuid
+  rankingSystemId String  @db.Uuid
+  seasonId        String  @db.Uuid
+  name            String?
+
+  rankingSystem RankingSystem     @relation(fields: [rankingSystemId], references: [id], onDelete: Cascade)
+  season        Season            @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  categories    RankingCategory[]
+
+  @@unique([rankingSystemId, seasonId])
+  @@map("ranking_seasons")
+}
+
+model RankingCategory {
+  id              String @id @default(uuid()) @db.Uuid
+  rankingSeasonId String @db.Uuid
+  label           String
+
+  rankingSeason RankingSeason        @relation(fields: [rankingSeasonId], references: [id], onDelete: Cascade)
+  entries       RankingEntry[]
+  pointsEvents  RankingPointsEvent[]
+  snapshots     RankingSnapshot[]
+
+  @@unique([rankingSeasonId, label])
+  @@map("ranking_categories")
+}
+
+model RankingEntry {
+  id                String   @id @default(uuid()) @db.Uuid
+  rankingCategoryId String   @db.Uuid
+  playerId          String   @db.Uuid
+  points            Decimal  @default(0) @db.Decimal(10, 2)
+  rank              Int?
+  computedAt        DateTime @default(now())
+
+  rankingCategory RankingCategory @relation(fields: [rankingCategoryId], references: [id], onDelete: Cascade)
+  player          PlayerProfile   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([rankingCategoryId, playerId])
+  @@map("ranking_entries")
+}
+
+model RankingPointsEvent {
+  id                 String   @id @default(uuid()) @db.Uuid
+  rankingCategoryId  String   @db.Uuid
+  playerId           String   @db.Uuid
+  points             Decimal  @db.Decimal(10, 2)
+  reason             String
+  sourceTournamentId String?  @db.Uuid
+  sourceResultId     String?  @db.Uuid
+  occurredAt         DateTime @default(now())
+
+  rankingCategory RankingCategory @relation(fields: [rankingCategoryId], references: [id], onDelete: Cascade)
+  player          PlayerProfile   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@index([rankingCategoryId, playerId])
+  @@unique([rankingCategoryId, sourceResultId, playerId])
+  @@map("ranking_points_events")
+}
+
+model RankingSnapshot {
+  id                String   @id @default(uuid()) @db.Uuid
+  rankingCategoryId String   @db.Uuid
+  version           Int
+  entries           Json
+  createdAt         DateTime @default(now())
+
+  rankingCategory RankingCategory @relation(fields: [rankingCategoryId], references: [id], onDelete: Cascade)
+
+  @@unique([rankingCategoryId, version])
+  @@index([rankingCategoryId, createdAt])
+  @@map("ranking_snapshots")
+}

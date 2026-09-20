@@ -1,0 +1,7 @@
+import { useEffect, useState } from "react";
+import { FlatList, StyleSheet, Text, View } from "react-native";
+import { useAuth } from "@/context/AuthContext";
+import { apiClient, type NotificationRow } from "@/lib/api-client";
+import { colors, spacing, typography } from "@/theme/tokens";
+export default function NotificationsScreen() { const { user } = useAuth(); const [rows, setRows] = useState<NotificationRow[]>([]); useEffect(() => { if (user) void apiClient.getNotifications().then(setRows); }, [user]); return <FlatList data={rows} keyExtractor={(row) => row.id} contentContainerStyle={styles.content} ListHeaderComponent={<Text style={styles.title}>Notifications</Text>} ListEmptyComponent={<Text style={styles.muted}>No notifications.</Text>} renderItem={({ item }) => <View style={styles.row}><Text style={styles.name}>{item.title}</Text><Text style={styles.muted}>{item.body}</Text></View>} />; }
+const styles = StyleSheet.create({ content: { padding: spacing.lg, gap: spacing.md }, title: { ...typography.title, color: colors.textPrimary }, row: { paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border }, name: { ...typography.body, color: colors.textPrimary }, muted: { ...typography.caption, color: colors.textMuted } });

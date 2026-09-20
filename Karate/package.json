@@ -1,0 +1,30 @@
+{
+  "name": "karate-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Karate Sports Platform monorepo — web, mobile, and backend services sharing one domain model.",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.9.0",
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "pnpm -r --if-present run lint",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "pnpm -r --if-present run test",
+    "build": "pnpm -r --if-present run build",
+    "db:generate": "pnpm --filter @karate/database run generate",
+    "db:migrate": "pnpm --filter @karate/database run migrate:dev",
+    "db:validate": "pnpm --filter @karate/database run validate",
+    "db:seed": "pnpm --filter @karate/database run seed",
+    "dev:api": "pnpm --filter @karate/api run dev",
+    "dev:web": "pnpm --filter @karate/web run dev",
+    "dev:mobile": "pnpm --filter @karate/mobile run start"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.2"
+  }
+}

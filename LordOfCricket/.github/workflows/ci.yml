@@ -1,0 +1,92 @@
+name: CI
+
+# Phase 8 — no CI/CD existed at all before this (confirmed by direct repo
+# audit: no .github/, no .gitlab-ci.yml, no Jenkinsfile). This is
+# deliberately minimal per the brief's own "do not build an unnecessarily
+# complex pipeline" guidance: lint, unit tests, integration tests (against
+# real Postgres + MongoDB service containers, mirroring how every
+# integration test in this repo already expects a real database — no
+# mocks), and both production builds. No deployment step exists here
+# because none exists in this repo to automate; this only gates merges on
+# the suite actually passing.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # Test-only values, never real secrets — MFA_ENCRYPTION_KEY only needs to
+  # be a valid 32-byte base64 string for AES-256-GCM to accept it (checked
+  # at boot by validateEnv.js in production; totp.service.js needs a
+  # correctly-shaped key regardless of NODE_ENV, hence set here too). None
+  # of these protect anything real, so committing them in a public workflow
+  # file is the accepted practice for CI-only test fixtures — see
+  # docs/DEPLOYMENT.md for the real, production `.env` requirements this
+  # deliberately does not reuse.
+  PG_USER: loc_ci
+  PG_PASSWORD: loc_ci_password
+  PG_DATABASE: loc_ci
+  PG_HOST: localhost
+  PG_PORT: 5432
+  DATABASE_URL: postgresql://loc_ci:loc_ci_password@localhost:5432/loc_ci?schema=public
+  MONGO_URI: mongodb://localhost:27017/loc_ci
+  JWT_SECRET: ci-only-jwt-secret-never-used-in-production
+  SESSION_COOKIE_SECRET: ci-only-session-secret-never-used-in-production
+  MFA_ENCRYPTION_KEY: MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=
+  CLIENT_ORIGIN: http://localhost:5173
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: loc_ci
+          POSTGRES_PASSWORD: loc_ci_password
+          POSTGRES_DB: loc_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mongo:
+        image: mongo:7
+        ports: ["27017:27017"]
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run db:migrate
+      - run: npm test
+      - run: npm run test:integration
+
+  client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+        env:
+          VITE_API_URL: http://localhost:5000/api
+          VITE_SOCKET_URL: http://localhost:5000

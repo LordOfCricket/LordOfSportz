@@ -1,0 +1,122 @@
+// ============================================================================
+// STATS DOMAIN
+// ----------------------------------------------------------------------------
+// Stats tables are MATERIALIZED, REBUILDABLE PROJECTIONS — never the source
+// of truth. Source of truth is competition events (BoutResult, ScoreEvent,
+// Registration, ...). `StatsComputationLog` records every (re)computation run
+// so aggregates can be audited or rebuilt from scratch if they ever drift.
+// `seasonId = null` on a stats row means "career totals".
+// ============================================================================
+
+model Season {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique // e.g. "2026"
+  startDate DateTime
+  endDate   DateTime
+  isActive  Boolean  @default(false)
+
+  playerStats    PlayerStats[]
+  coachStats     CoachStats[]
+  academyStats   AcademyStats[]
+  rankingSeasons RankingSeason[]
+
+  @@map("seasons")
+}
+
+model PlayerStats {
+  id                 String   @id @default(uuid()) @db.Uuid
+  playerId           String   @db.Uuid
+  seasonId           String?  @db.Uuid
+  bouts              Int      @default(0)
+  wins               Int      @default(0)
+  losses             Int      @default(0)
+  draws              Int      @default(0)
+  pointsScored       Int      @default(0)
+  pointsConceded     Int      @default(0)
+  medalsGold         Int      @default(0)
+  medalsSilver       Int      @default(0)
+  medalsBronze       Int      @default(0)
+  tournamentsEntered Int      @default(0)
+  lastComputedAt     DateTime @default(now())
+
+  player PlayerProfile @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  season Season?       @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, seasonId])
+  @@map("player_stats")
+}
+
+model CoachStats {
+  id               String   @id @default(uuid()) @db.Uuid
+  coachId          String   @db.Uuid
+  seasonId         String?  @db.Uuid
+  studentCount     Int      @default(0)
+  studentBouts     Int      @default(0)
+  studentWins      Int      @default(0)
+  studentLosses    Int      @default(0)
+  studentMedalsWon Int      @default(0)
+  lastComputedAt   DateTime @default(now())
+
+  coach  CoachProfile @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  season Season?      @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([coachId, seasonId])
+  @@map("coach_stats")
+}
+
+model AcademyStats {
+  id                      String   @id @default(uuid()) @db.Uuid
+  academyId               String   @db.Uuid
+  seasonId                String?  @db.Uuid
+  playerCount             Int      @default(0)
+  coachCount              Int      @default(0)
+  tournamentsHosted       Int      @default(0)
+  tournamentsParticipated Int      @default(0)
+  wins                    Int      @default(0)
+  losses                  Int      @default(0)
+  medalsWon               Int      @default(0)
+  lastComputedAt          DateTime @default(now())
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  season  Season? @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([academyId, seasonId])
+  @@map("academy_stats")
+}
+
+model TournamentStats {
+  id                 String   @id @default(uuid()) @db.Uuid
+  tournamentId       String   @unique @db.Uuid
+  registrationsCount Int      @default(0)
+  academiesCount     Int      @default(0)
+  totalBouts         Int      @default(0)
+  completedBouts     Int      @default(0)
+  liveBouts          Int      @default(0)
+  lastComputedAt     DateTime @default(now())
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@map("tournament_stats")
+}
+
+enum StatsComputationStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+/// Every stats (re)computation run, so aggregates can be traced or rebuilt.
+model StatsComputationLog {
+  id           String                 @id @default(uuid()) @db.Uuid
+  statsType    String // e.g. "PLAYER", "ACADEMY", "TOURNAMENT"
+  entityId     String                 @db.Uuid
+  seasonId     String?                @db.Uuid
+  triggeredBy  String? // userId or "SYSTEM"
+  status       StatsComputationStatus @default(RUNNING)
+  startedAt    DateTime               @default(now())
+  completedAt  DateTime?
+  errorMessage String?
+
+  @@index([statsType, entityId])
+  @@map("stats_computation_log")
+}

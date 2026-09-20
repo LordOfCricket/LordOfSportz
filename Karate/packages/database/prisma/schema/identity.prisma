@@ -1,0 +1,88 @@
+// ============================================================================
+// IDENTITY DOMAIN
+// ----------------------------------------------------------------------------
+// `User` is the local Karate-platform account record. It is deliberately kept
+// thin: authentication material + a pointer to the four fixed application
+// roles. A single person can hold more than one role (e.g. a coach who is
+// also a certified scorer), so roles are a join table, not a column.
+//
+// `sportsHubIdentityId` is the integration boundary with the parent SportsHub
+// platform (see docs/architecture/system-architecture.md, ADR-0002). It is
+// nullable and unique: when null, this account is Karate-native (current
+// MVP reality); when set, it is the external SportsHub user ID and this
+// record is treated as "the Karate profile" for that global identity. No
+// other table should ever duplicate a person's core identity fields.
+// ============================================================================
+
+enum UserRole {
+  PLAYER
+  COACH
+  ACADEMY
+  SCORER
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+/// Shared by PlayerProfile/CoachProfile/ScorerProfile — a lighter-weight
+/// on/off switch distinct from UserStatus (the account) or AcademyStatus
+/// (the organization).
+enum ProfileStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id                  String     @id @default(uuid()) @db.Uuid
+  /// External SportsHub identity reference. Null until SportsHub integration lands.
+  sportsHubIdentityId String?    @unique
+  email               String     @unique
+  passwordHash        String?
+  fullName            String
+  phoneNumber         String?
+  status              UserStatus @default(ACTIVE)
+  emailVerifiedAt     DateTime?
+  lastLoginAt         DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  deletedAt           DateTime?
+
+  roles                     UserRoleAssignment[]
+  playerProfile             PlayerProfile?
+  coachProfile              CoachProfile?
+  scorerProfile             ScorerProfile?
+  createdAcademies          Academy[]              @relation("AcademyCreatedBy")
+  academyAdminOf            AcademyAdministrator[]
+  auditLogs                 AuditLog[]
+  notifications             Notification[]
+  raisedProtests            Protest[]              @relation("ProtestRaisedBy")
+  resolvedProtests          Protest[]              @relation("ProtestResolvedBy")
+  reportedIncidents         Incident[]
+  requestedVideoReviews     VideoReviewRequest[]   @relation("VideoReviewRequestedBy")
+  decidedVideoReviews       VideoReviewRequest[]   @relation("VideoReviewDecidedBy")
+  refreshSessions           RefreshSession[]
+  medicalClearancesVerified MedicalClearance[]
+  weighInAttemptsVerified   WeighInAttempt[]
+
+  @@index([status])
+  @@map("users")
+}
+
+/// Join table so a User can hold multiple of the four fixed application roles.
+/// Granting a role is what unlocks creating the matching profile (PlayerProfile,
+/// CoachProfile, ScorerProfile) or an Academy organization.
+model UserRoleAssignment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  role      UserRole
+  grantedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([role])
+  @@map("user_role_assignments")
+}

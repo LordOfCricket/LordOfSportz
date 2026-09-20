@@ -1,0 +1,177 @@
+// ============================================================================
+// BELT / GRADING DOMAIN
+// ----------------------------------------------------------------------------
+// Belt is a first-class, historical domain — never a `belt: string` column on
+// Player. `PlayerBeltHistory` is append-only; `isCurrent` marks the active
+// row per player. Certificates are their own entity so verification status
+// and serial numbers are consistent whether the certificate came from a
+// grading event or (later) a tournament result.
+// ============================================================================
+
+enum BeltGradeType {
+  KYU
+  DAN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum CertificateType {
+  BELT_GRADING
+  TOURNAMENT_RESULT
+  PARTICIPATION
+}
+
+enum GradingEventStatus {
+  DRAFT
+  SCHEDULED
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  FINALIZED
+  CANCELLED
+}
+
+enum GradingResult {
+  PENDING
+  PASS
+  FAIL
+  ABSENT
+  WITHHELD
+}
+
+model BeltSystem {
+  id            String   @id @default(uuid()) @db.Uuid
+  karateStyleId String   @db.Uuid
+  name          String // e.g. "WKF Standard Kyu/Dan", "Academy-issued"
+  description   String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  karateStyle   KarateStyle    @relation(fields: [karateStyleId], references: [id], onDelete: Restrict)
+  grades        BeltGrade[]
+  gradingEvents GradingEvent[]
+
+  @@unique([karateStyleId, name])
+  @@map("belt_systems")
+}
+
+model BeltGrade {
+  id           String        @id @default(uuid()) @db.Uuid
+  beltSystemId String        @db.Uuid
+  name         String // e.g. "9th Kyu", "1st Dan"
+  type         BeltGradeType
+  rankOrder    Int // ascending order of progression, unique within a system
+  colorName    String?
+  colorHex     String?
+
+  beltSystem              BeltSystem           @relation(fields: [beltSystemId], references: [id], onDelete: Restrict)
+  beltHistory             PlayerBeltHistory[]
+  /// Restrict, not Cascade/SetNull — a grade that has ever been awarded or
+  /// tested-for can never be deleted; historical records must stay readable.
+  previousForParticipants GradingParticipant[] @relation("ParticipantPreviousGrade")
+  targetForParticipants   GradingParticipant[] @relation("ParticipantTargetGrade")
+  registrationSnapshots   Registration[]       @relation("RegistrationBeltSnapshot")
+
+  @@unique([beltSystemId, rankOrder])
+  @@map("belt_grades")
+}
+
+/// A single grading session, hosted by an academy/organization, that can award
+/// grades to multiple players. Status is application-controlled (see
+/// apps/api/src/modules/grading) — never settable directly from client input.
+model GradingEvent {
+  id             String             @id @default(uuid()) @db.Uuid
+  name           String
+  beltSystemId   String             @db.Uuid
+  hostAcademyId  String?            @db.Uuid
+  examinerUserId String?            @db.Uuid
+  status         GradingEventStatus @default(DRAFT)
+  eventDate      DateTime
+  location       String?
+  notes          String?
+  createdAt      DateTime           @default(now())
+
+  beltSystem   BeltSystem           @relation(fields: [beltSystemId], references: [id], onDelete: Restrict)
+  hostAcademy  Academy?             @relation(fields: [hostAcademyId], references: [id], onDelete: SetNull)
+  awards       PlayerBeltHistory[]
+  participants GradingParticipant[]
+
+  @@map("grading_events")
+}
+
+/// One candidate's row within a grading event. Distinct from
+/// PlayerBeltHistory: not every participant passes, so not every
+/// participant produces a history award — this table records "who was
+/// assessed and what happened"; `beltHistoryId` links to the award only
+/// once the result is PASS and the event has been finalized.
+model GradingParticipant {
+  id              String        @id @default(uuid()) @db.Uuid
+  gradingEventId  String        @db.Uuid
+  playerId        String        @db.Uuid
+  previousGradeId String?       @db.Uuid
+  targetGradeId   String        @db.Uuid
+  examinerUserId  String?       @db.Uuid
+  result          GradingResult @default(PENDING)
+  remarks         String?
+  decidedAt       DateTime?
+  decidedByUserId String?       @db.Uuid
+  beltHistoryId   String?       @unique @db.Uuid
+  createdAt       DateTime      @default(now())
+
+  gradingEvent  GradingEvent       @relation(fields: [gradingEventId], references: [id], onDelete: Cascade)
+  player        PlayerProfile      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  previousGrade BeltGrade?         @relation("ParticipantPreviousGrade", fields: [previousGradeId], references: [id], onDelete: Restrict)
+  targetGrade   BeltGrade          @relation("ParticipantTargetGrade", fields: [targetGradeId], references: [id], onDelete: Restrict)
+  beltHistory   PlayerBeltHistory? @relation(fields: [beltHistoryId], references: [id], onDelete: SetNull)
+
+  @@unique([gradingEventId, playerId])
+  @@index([playerId])
+  @@map("grading_participants")
+}
+
+/// Append-only history of belt awards. Never update a past row in place;
+/// insert a new row and flip `isCurrent`.
+model PlayerBeltHistory {
+  id                 String             @id @default(uuid()) @db.Uuid
+  playerId           String             @db.Uuid
+  beltGradeId        String             @db.Uuid
+  gradingEventId     String?            @db.Uuid
+  awardingAcademyId  String?            @db.Uuid
+  examinerUserId     String?            @db.Uuid
+  awardedDate        DateTime
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  certificateId      String?            @unique @db.Uuid
+  isCurrent          Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+
+  player            PlayerProfile       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  beltGrade         BeltGrade           @relation(fields: [beltGradeId], references: [id], onDelete: Restrict)
+  gradingEvent      GradingEvent?       @relation(fields: [gradingEventId], references: [id], onDelete: SetNull)
+  certificate       Certificate?        @relation(fields: [certificateId], references: [id], onDelete: SetNull)
+  sourceParticipant GradingParticipant?
+
+  @@index([playerId, isCurrent])
+  @@map("player_belt_history")
+}
+
+model Certificate {
+  id                 String             @id @default(uuid()) @db.Uuid
+  type               CertificateType
+  playerId           String?            @db.Uuid
+  issuedByAcademyId  String?            @db.Uuid
+  serialNumber       String             @unique
+  verificationCode   String             @unique
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  fileUrl            String?
+  issuedAt           DateTime           @default(now())
+
+  beltHistoryEntry PlayerBeltHistory?
+
+  @@index([playerId])
+  @@map("certificates")
+}

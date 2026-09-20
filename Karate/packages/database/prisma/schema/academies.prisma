@@ -1,0 +1,67 @@
+// ============================================================================
+// ACADEMY DOMAIN
+// ----------------------------------------------------------------------------
+// An Academy is an ORGANIZATION, not a person. A User operates an academy
+// through `AcademyAdministrator` membership (OWNER/ADMIN), never by storing
+// academy fields directly on the user. Coaches and players affiliate with
+// an academy through the historical membership models in memberships.prisma.
+// ============================================================================
+
+enum AcademyAdminRole {
+  OWNER
+  ADMIN
+}
+
+enum AcademyStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+model Academy {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String
+  slug         String        @unique
+  description  String?
+  countryCode  String? // ISO 3166-1 alpha-2, keeps room for multi-country support
+  city         String?
+  logoUrl      String?
+  contactEmail String?
+  contactPhone String?
+  status       AcademyStatus @default(PENDING_VERIFICATION)
+  createdById  String        @db.Uuid
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+
+  createdBy           User                       @relation("AcademyCreatedBy", fields: [createdById], references: [id])
+  administrators      AcademyAdministrator[]
+  playerMemberships   AcademyPlayerMembership[]
+  coachAffiliations   AcademyCoachAffiliation[]
+  membershipRequests  AcademyMembershipRequest[]
+  tournamentOrganizer TournamentOrganizer?
+  gradingEventsHosted GradingEvent[]
+  academyStats        AcademyStats[]
+  registrations       Registration[]
+  kataTeams           KataTeam[]
+
+  @@index([status])
+  @@index([name])
+  @@map("academies")
+}
+
+/// Who is authorized to administer the academy's account (not athletic membership).
+model AcademyAdministrator {
+  id        String           @id @default(uuid()) @db.Uuid
+  academyId String           @db.Uuid
+  userId    String           @db.Uuid
+  role      AcademyAdminRole
+  createdAt DateTime         @default(now())
+
+  academy Academy @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([academyId, userId])
+  @@map("academy_administrators")
+}

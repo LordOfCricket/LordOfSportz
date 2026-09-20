@@ -1,0 +1,63 @@
+import type { Config } from "tailwindcss";
+
+/**
+ * Karate platform design tokens. Colors are defined as CSS variables in
+ * src/app/globals.css (light + dark) and referenced here so components
+ * never hardcode a hex value. See docs/architecture/web-architecture.md
+ * for the full design language rationale.
+ */
+const config: Config = {
+  content: ["./src/**/*.{ts,tsx}"],
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        ink: {
+          DEFAULT: "var(--color-ink)",
+          soft: "var(--color-ink-soft)",
+        },
+        surface: {
+          DEFAULT: "var(--color-surface)",
+          raised: "var(--color-surface-raised)",
+          sunken: "var(--color-surface-sunken)",
+        },
+        border: {
+          DEFAULT: "var(--color-border)",
+        },
+        accent: {
+          DEFAULT: "var(--color-accent)",
+          hover: "var(--color-accent-hover)",
+        },
+        gold: {
+          DEFAULT: "var(--color-gold)",
+        },
+        text: {
+          primary: "var(--color-text-primary)",
+          secondary: "var(--color-text-secondary)",
+          muted: "var(--color-text-muted)",
+        },
+        success: "var(--color-success)",
+        warning: "var(--color-warning)",
+        danger: "var(--color-danger)",
+        info: "var(--color-info)",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+      },
+      borderRadius: {
+        sm: "4px",
+        md: "8px",
+        lg: "12px",
+        xl: "16px",
+      },
+      boxShadow: {
+        card: "0 1px 2px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04)",
+        raised: "0 4px 16px rgba(0,0,0,0.10)",
+      },
+    },
+  },
+  plugins: [],
+};
+
+export default config;

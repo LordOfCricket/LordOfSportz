@@ -1,0 +1,155 @@
+// ============================================================================
+// TOURNAMENT DOMAIN
+// ----------------------------------------------------------------------------
+// ADR-0001 (docs/decisions): `TournamentOrganizer` is a typed-relationship
+// row, not a hardcoded `Tournament.organizerType = ACADEMY` field. MVP only
+// populates the `academyId` branch; adding FEDERATION/ASSOCIATION later means
+// adding a new nullable FK column here, not rewriting Tournament.
+//
+// Status transitions (TournamentStatus) are enforced in the application
+// domain layer (apps/api), not by a DB constraint — Postgres CHECK
+// constraints can't express a full state machine cleanly. Every transition
+// is recorded in TournamentStatusHistory for audit and reproducibility.
+// ============================================================================
+
+enum OrganizerType {
+  ACADEMY
+  FEDERATION
+  ASSOCIATION
+  OTHER
+}
+
+enum TournamentStatus {
+  DRAFT
+  PUBLISHED
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  VERIFICATION
+  WEIGH_IN
+  DRAW_GENERATED
+  SCHEDULED
+  LIVE
+  COMPLETED
+  RESULTS_FINALIZED
+  ARCHIVED
+}
+
+enum Discipline {
+  KUMITE
+  KATA
+}
+
+enum GenderRestriction {
+  MALE
+  FEMALE
+  MIXED
+  OPEN
+}
+
+model TournamentOrganizer {
+  id            String        @id @default(uuid()) @db.Uuid
+  organizerType OrganizerType
+  academyId     String?       @unique @db.Uuid // populated when organizerType = ACADEMY
+  createdAt     DateTime      @default(now())
+
+  academy     Academy?     @relation(fields: [academyId], references: [id], onDelete: Cascade)
+  tournaments Tournament[]
+
+  @@map("tournament_organizers")
+}
+
+model Tournament {
+  id                   String           @id @default(uuid()) @db.Uuid
+  organizerId          String           @db.Uuid
+  name                 String
+  slug                 String           @unique
+  description          String?
+  venue                String?
+  countryCode          String?
+  status               TournamentStatus @default(DRAFT)
+  registrationOpensAt  DateTime?
+  registrationClosesAt DateTime?
+  startDate            DateTime?
+  endDate              DateTime?
+  createdByUserId      String           @db.Uuid
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  organizer           TournamentOrganizer       @relation(fields: [organizerId], references: [id], onDelete: Restrict)
+  statusHistory       TournamentStatusHistory[]
+  competitions        Competition[]
+  categories          Category[]
+  tatamis             Tatami[]
+  officialAssignments OfficialAssignment[]
+  schedules           Schedule[]
+  protests            Protest[]
+  incidents           Incident[]
+  stats               TournamentStats?
+
+  @@index([status])
+  @@index([organizerId])
+  @@map("tournaments")
+}
+
+/// Append-only audit trail of every lifecycle transition. Never mutated.
+model TournamentStatusHistory {
+  id              String            @id @default(uuid()) @db.Uuid
+  tournamentId    String            @db.Uuid
+  fromStatus      TournamentStatus?
+  toStatus        TournamentStatus
+  changedByUserId String            @db.Uuid
+  changedAt       DateTime          @default(now())
+  reason          String?
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  @@index([tournamentId])
+  @@map("tournament_status_history")
+}
+
+/// Tournament-scoped competition category (age/gender/weight/style band).
+model Category {
+  id                           String            @id @default(uuid()) @db.Uuid
+  tournamentId                 String            @db.Uuid
+  karateStyleId                String?           @db.Uuid
+  name                         String
+  genderRestriction            GenderRestriction @default(OPEN)
+  ageMin                       Int?
+  ageMax                       Int?
+  weightMinKg                  Decimal?          @db.Decimal(5, 2)
+  weightMaxKg                  Decimal?          @db.Decimal(5, 2)
+  beltGradeMinOrder            Int?
+  beltGradeMaxOrder            Int?
+  /// Overrides the scheduler's default per-bout duration for this category. Null = use the default.
+  estimatedBoutDurationMinutes Int?
+
+  tournament   Tournament    @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  karateStyle  KarateStyle?  @relation(fields: [karateStyleId], references: [id], onDelete: SetNull)
+  competitions Competition[]
+
+  @@index([tournamentId])
+  @@map("categories")
+}
+
+/// A single discipline instance within a tournament (e.g. "Kumite, U18 Male, -68kg").
+/// Kumite and Kata deliberately do not share a scoring table — see scoring.prisma.
+model Competition {
+  id               String     @id @default(uuid()) @db.Uuid
+  tournamentId     String     @db.Uuid
+  categoryId       String     @db.Uuid
+  discipline       Discipline
+  ruleSetVersionId String?    @db.Uuid
+  name             String
+  createdAt        DateTime   @default(now())
+
+  tournament          Tournament           @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category            Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  ruleSetVersion      RuleSetVersion?      @relation(fields: [ruleSetVersionId], references: [id], onDelete: SetNull)
+  registrations       Registration[]
+  draws               Draw[]
+  officialAssignments OfficialAssignment[]
+  kataTeams           KataTeam[]
+
+  @@index([tournamentId, discipline])
+  @@map("competitions")
+}
