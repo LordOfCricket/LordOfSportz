@@ -92,6 +92,15 @@ export default function Navbar() {
               </Link>
             </li>
           ))}
+          <li className="mt-1 border-t border-line pt-3">
+            <Link
+              href="/login"
+              onClick={() => setIsOpen(false)}
+              className="block rounded-lg px-3 py-3 text-base font-semibold text-accent transition-colors hover:bg-ink-2"
+            >
+              Login
+            </Link>
+          </li>
         </ul>
       </div>
     </header>

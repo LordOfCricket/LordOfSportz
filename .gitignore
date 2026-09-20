@@ -35,3 +35,4 @@ docker/
 k8s/
 kubernetes/
 GITHUB_SECURITY_AUDIT*.txt
+.karate-pgdata/

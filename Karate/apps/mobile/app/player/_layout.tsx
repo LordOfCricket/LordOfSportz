@@ -10,6 +10,7 @@ export default function PlayerTabsLayout() {
           headerStyle: { backgroundColor: colors.surfaceRaised },
           headerTintColor: colors.textPrimary,
           tabBarActiveTintColor: colors.accent,
+          tabBarIcon: () => null,
           tabBarInactiveTintColor: colors.textMuted,
         }}
       >

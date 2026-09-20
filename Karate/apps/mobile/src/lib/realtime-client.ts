@@ -1,8 +1,7 @@
 import { io, type Socket } from "socket.io-client";
 import { tokenStorage } from "./token-storage";
-import { ensureFreshAccessToken } from "./api-client";
+import { API_BASE_URL, ensureFreshAccessToken } from "./api-client";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
 
 type RealtimeEvent = { entityId?: string; eventType?: string };
 

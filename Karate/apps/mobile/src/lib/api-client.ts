@@ -2,7 +2,12 @@ import type { ApiResponse } from "@karate/types";
 import type { LoginRequest, RegisterRequest } from "@karate/validation";
 import { tokenStorage } from "./token-storage";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
+export const API_BASE_URL: string = (() => {
+  const url = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (url) return url;
+  if (__DEV__) return "http://localhost:4000";
+  throw new Error("EXPO_PUBLIC_API_BASE_URL is required for non-development builds");
+})();
 
 export class ApiRequestError extends Error {
   constructor(

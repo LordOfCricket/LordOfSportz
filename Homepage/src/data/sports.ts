@@ -3,6 +3,11 @@ import type { FutureSport, Sport, SportEntry } from "@/types/sport";
 // Single source of truth for every sport, present and future. Promoting a
 // future sport is additive: move its entry here, flip `status`, and fill in
 // the remaining `Sport` fields — no separate object shape to rewrite into.
+const isDev = process.env.NODE_ENV !== "production";
+// Separate sport apps; override per deployment via env (see .env.example).
+const cricketUrl = process.env.NEXT_PUBLIC_CRICKET_URL || (isDev ? "http://localhost:5173" : "https://lordofcricket.com");
+const karateUrl = process.env.NEXT_PUBLIC_KARATE_URL || (isDev ? "http://localhost:3001" : "");
+
 const sportEntries: SportEntry[] = [
   {
     name: "Cricket",
@@ -10,7 +15,7 @@ const sportEntries: SportEntry[] = [
     tagline: "The world's game.",
     description: "Step into the world of LordOfCricket.",
     status: "active",
-    href: "https://lordofcricket.com",
+    href: cricketUrl,
     external: true,
     accent: "#4ADE80",
     accentSoft: "rgba(74, 222, 128, 0.14)",
@@ -21,8 +26,9 @@ const sportEntries: SportEntry[] = [
     slug: "karate",
     tagline: "Discipline. Power. Precision.",
     description: "A dedicated space for fighters, coaches and competitions.",
-    status: "coming-soon",
-    href: "/karate",
+    status: karateUrl ? "active" : "coming-soon",
+    href: karateUrl || "/karate",
+    external: Boolean(karateUrl),
     accent: "#F43F5E",
     accentSoft: "rgba(244, 63, 94, 0.14)",
     cta: "EXPLORE KARATE",

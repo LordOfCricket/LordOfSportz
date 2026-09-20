@@ -9,7 +9,7 @@ import { getSessionCookie, setSessionCookie, deleteSessionCookie } from './sessi
 //   pointing a production app at localhost.
 const APP_ENV = process.env.EXPO_PUBLIC_APP_ENV
 const CONFIGURED_API_URL = process.env.EXPO_PUBLIC_API_URL
-const DEV_FALLBACK_API_URL = 'http://localhost:3000/api'
+const DEV_FALLBACK_API_URL = 'http://localhost:5000/api'
 const isDevelopmentBuild = APP_ENV === 'development'
 
 function resolveApiUrl(): string {

@@ -31,7 +31,7 @@ interface SocketMatchError {
 }
 
 // Derive socket URL from API URL (remove /api suffix)
-// API_URL is http://localhost:3000/api; socket needs http://localhost:3000
+// API_URL is http://localhost:5000/api; socket needs http://localhost:5000
 const getSocketUrl = (): string => {
   const trimmed = API_URL.replace(/\/$/, '')
   return trimmed.replace(/\/api$/, '')
