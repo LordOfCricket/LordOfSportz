@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { callBackend } from "@/lib/server/backend-client";
-import { setAuthCookies } from "@/lib/server/auth-cookies";
+import { setAuthCookies, setSsoMarker, setCricketSessionFromHeader } from "@/lib/server/auth-cookies";
 
 interface LoginData {
   userId: string;
@@ -10,6 +10,7 @@ interface LoginData {
   roles: string[];
   accessToken: string;
   refreshToken: string;
+  cricketSessionCookie?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -35,11 +36,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result.body, { status: result.status });
   }
 
-  const { accessToken, refreshToken, ...user } = result.body.data;
+  const { accessToken, refreshToken, cricketSessionCookie, ...user } = result.body.data;
   const response = NextResponse.json(
     { success: true, data: user, meta: result.body.meta },
     { status: result.status },
   );
   setAuthCookies(response, { accessToken, refreshToken });
+  if (cricketSessionCookie) {
+    setCricketSessionFromHeader(response, cricketSessionCookie);
+    setSsoMarker(response);
+  }
   return response;
 }

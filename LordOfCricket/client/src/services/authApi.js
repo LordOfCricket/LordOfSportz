@@ -15,7 +15,7 @@ export async function verifyOtp(identifier, code) {
 }
 
 export async function logout() {
-  const response = await api.post('/auth/logout')
+  const response = await api.post('/auth/logout?scope=all')
   return response.data
 }
 

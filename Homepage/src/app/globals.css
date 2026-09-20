@@ -158,7 +158,7 @@ body {
 
 .athlete-karate { animation-delay: 0.65s; }
 .athlete-tennis { animation-delay: 0.85s; }
-.athlete.is-muted { opacity: 0.34; filter: blur(1px); }
+.athlete.is-muted { opacity: 0.08; filter: blur(1px); }
 .athlete-aura { fill: var(--color-accent); opacity: 0; filter: blur(22px); }
 
 .cricket-body,
@@ -360,7 +360,7 @@ body {
 
 @keyframes athlete-arrive {
   from { opacity: 0; transform: translateY(3rem) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0.2; transform: translateY(0) scale(1); }
 }
 
 @keyframes cricket-swing {

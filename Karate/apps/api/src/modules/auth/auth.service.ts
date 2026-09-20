@@ -5,6 +5,7 @@ import type { UserRole } from "@karate/types";
 import { AuthenticationError, ConflictError, NotFoundError } from "@karate/shared";
 import { issueAccessToken } from "./access-token.util";
 import { createRefreshSession } from "./refresh.service";
+import { cricketApiUrl, cricketLogin, issueForFederatedUser } from "./federation.service";
 
 const BCRYPT_SALT_ROUNDS = 12;
 
@@ -15,6 +16,7 @@ interface AuthResult {
   roles: UserRole[];
   accessToken: string;
   refreshToken: string;
+  cricketSessionCookie?: string;
 }
 
 export interface CurrentUser {
@@ -26,6 +28,11 @@ export interface CurrentUser {
 }
 
 export async function register(input: RegisterRequest): Promise<AuthResult> {
+  // With a shared identity provider configured, accounts are created there (one identity
+  // for every sport) — never as a Karate-only credential.
+  if (cricketApiUrl()) {
+    throw new ConflictError("Create your LordOfSportz account with the shared identity, then sign in here.");
+  }
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) {
     throw new ConflictError("An account with this email already exists.");
@@ -66,6 +73,18 @@ export async function getCurrentUser(userId: string): Promise<CurrentUser> {
 }
 
 export async function login(input: LoginRequest): Promise<AuthResult> {
+  try {
+    return await localLogin(input);
+  } catch (error) {
+    if (!(error instanceof AuthenticationError) || !cricketApiUrl()) throw error;
+    const federated = await cricketLogin(input.email, input.password);
+    const result = federated && (await issueForFederatedUser(federated.user.email, federated.user.name));
+    if (!federated || !result) throw error;
+    return { ...result, cricketSessionCookie: federated.setCookie };
+  }
+}
+
+async function localLogin(input: LoginRequest): Promise<AuthResult> {
   const user = await prisma.user.findUnique({ where: { email: input.email }, include: { roles: true } });
 
   // Constant-shape failure path: don't reveal whether the email exists.

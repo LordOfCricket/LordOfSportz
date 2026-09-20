@@ -10,7 +10,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build": "expo export --platform android",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "eas-build-pre-install": "node ./scripts/check-release-env.js"
   },
   "dependencies": {
     "@karate/constants": "workspace:*",

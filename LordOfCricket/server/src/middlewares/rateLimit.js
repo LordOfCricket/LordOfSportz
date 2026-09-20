@@ -180,3 +180,11 @@ export const adminPasswordResetLimiter = makeLimiter({
   message: 'Too many password reset actions. Please try again later.',
   keyGenerator: byUserId,
 })
+
+// Cross-app SSO handoff/redeem: its own budget so app switching never consumes (or is starved by)
+// the password-login limiter above.
+export const ssoLimiter = makeLimiter({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: 'Too many sign-in handoff requests. Please try again shortly.',
+})

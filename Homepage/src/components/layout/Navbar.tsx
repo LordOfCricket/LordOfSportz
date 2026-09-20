@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CloseIcon, MenuIcon } from "@/components/shared/icons";
 import { navLinks } from "@/data/navigation";
+import { useAuthUser } from "@/lib/auth";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useAuthUser();
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 8);
@@ -55,12 +57,25 @@ export default function Navbar() {
           ))}
         </ul>
 
+        {user ? (
+          <div className="hidden items-center gap-4 md:flex">
+            <span className="max-w-[10rem] truncate text-sm text-muted">{user.name}</span>
+            <button
+              type="button"
+              onClick={logout}
+              className="rounded-full border border-line px-5 py-2.5 text-sm font-semibold tracking-wide text-paper transition-colors hover:border-accent hover:text-accent"
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
         <Link
-          href="/login"
-          className="hidden rounded-full border border-line px-5 py-2.5 text-sm font-semibold tracking-wide text-paper transition-colors hover:border-accent hover:text-accent md:inline-flex"
-        >
-          Login
-        </Link>
+            href="/login"
+            className="hidden rounded-full border border-line px-5 py-2.5 text-sm font-semibold tracking-wide text-paper transition-colors hover:border-accent hover:text-accent md:inline-flex"
+          >
+            Login
+          </Link>
+        )}
 
         <button
           type="button"
@@ -93,13 +108,26 @@ export default function Navbar() {
             </li>
           ))}
           <li className="mt-1 border-t border-line pt-3">
-            <Link
-              href="/login"
-              onClick={() => setIsOpen(false)}
-              className="block rounded-lg px-3 py-3 text-base font-semibold text-accent transition-colors hover:bg-ink-2"
-            >
-              Login
-            </Link>
+            {user ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOpen(false);
+                  void logout();
+                }}
+                className="block w-full rounded-lg px-3 py-3 text-left text-base font-semibold text-accent transition-colors hover:bg-ink-2"
+              >
+                Logout ({user.name})
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+                className="block rounded-lg px-3 py-3 text-base font-semibold text-accent transition-colors hover:bg-ink-2"
+              >
+                Login
+              </Link>
+            )}
           </li>
         </ul>
       </div>

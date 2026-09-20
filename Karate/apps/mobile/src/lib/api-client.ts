@@ -22,6 +22,8 @@ export class ApiRequestError extends Error {
 interface AuthTokens {
   accessToken: string;
   refreshToken: string;
+  /** Set-Cookie of the shared identity session, present on federated sign-in. */
+  cricketSessionCookie?: string;
 }
 
 export interface AuthUser {
@@ -441,6 +443,8 @@ export const apiClient = {
     request<AuthUser & AuthTokens>("/api/v1/auth/register", { method: "POST", body: input }),
   login: (input: LoginRequest) =>
     request<AuthUser & AuthTokens>("/api/v1/auth/login", { method: "POST", body: input }),
+  sso: (code: string) =>
+    request<AuthUser & AuthTokens>("/api/v1/auth/sso", { method: "POST", body: { code } }),
   me: () => request<CurrentUser>("/api/v1/auth/me", { withAuth: true }),
   logout: (refreshToken: string) =>
     request<{ loggedOut: true }>("/api/v1/auth/logout", { method: "POST", body: { refreshToken } }),

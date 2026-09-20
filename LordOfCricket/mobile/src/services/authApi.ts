@@ -53,7 +53,7 @@ export function getDevOtpCode(): string | null {
 }
 
 export async function logout() {
-  const response = await api.post('/auth/logout')
+  const response = await api.post('/auth/logout?scope=all')
   return response.data
 }
 
@@ -136,5 +136,18 @@ export interface SignupCreateAccountPayload {
 
 export async function signupCreateAccount(payload: SignupCreateAccountPayload): Promise<User> {
   const response = await api.post<{ user: User }>('/auth/signup/create-account', payload)
+  return response.data.user
+}
+
+// Cross-app SSO (LordOfCricket is the identity provider). A signed-in session asks for a
+// one-time, 60s code bound to the destination app; the destination redeems it for ITS OWN
+// session. The session token itself never leaves this app.
+export async function ssoHandoff(audience: 'karate'): Promise<string> {
+  const response = await api.post<{ code: string }>('/auth/sso/handoff', { audience })
+  return response.data.code
+}
+
+export async function ssoRedeem(code: string): Promise<User> {
+  const response = await api.post<{ user: User }>('/auth/sso/redeem', { code, audience: 'cricket-mobile' })
   return response.data.user
 }

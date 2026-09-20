@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Linking } from "react-native";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
@@ -7,6 +8,8 @@ import { USER_ROLES, type UserRole } from "@karate/types";
 import { useAuth } from "@/context/AuthContext";
 import { ApiRequestError } from "@/lib/api-client";
 import { colors, radii, spacing, typography } from "@/theme/tokens";
+
+const CRICKET_WEB_URL = process.env.EXPO_PUBLIC_CRICKET_WEB_URL;
 
 /** FOUNDATION: see login.tsx for scope note. */
 export default function RegisterScreen() {
@@ -18,6 +21,19 @@ export default function RegisterScreen() {
   const [role, setRole] = useState<UserRole>("PLAYER");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (CRICKET_WEB_URL) {
+    return (
+      <SafeAreaView style={{ flex: 1, justifyContent: "center", padding: spacing.lg, gap: spacing.md }}>
+        <Text style={typography.title}>Create your account</Text>
+        <Text style={typography.body}>One LordOfSportz account works across every sport. Create it once, then sign in here.</Text>
+        <Pressable accessibilityRole="button" onPress={() => void Linking.openURL(`${CRICKET_WEB_URL}/signup`)}>
+          <Text style={{ ...typography.body, color: colors.accent }}>Create LordOfSportz account</Text>
+        </Pressable>
+        <Link href="/login" style={{ ...typography.body, color: colors.accent }}>Back to sign in</Link>
+      </SafeAreaView>
+    );
+  }
 
   async function handleSubmit() {
     setError(null);

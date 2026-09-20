@@ -5,6 +5,12 @@ import type { UserRole } from "@karate/types";
 import { roleDashboardPath, roleRequiredForPath } from "@/lib/client/role-routes";
 import { getWebServerEnv } from "@/lib/server/env";
 
+const CRICKET_SESSION_COOKIE = "loc_session";
+const SSO_MARKER_COOKIE = "karate_sso";
+// Accounts are created once, with the shared LordOfCricket identity (dev fallback: local Cricket web).
+const CRICKET_WEB_URL =
+  process.env["NEXT_PUBLIC_CRICKET_WEB_URL"] || (process.env.NODE_ENV !== "production" ? "http://localhost:5173" : "");
+
 export const config = {
   matcher: ["/dashboard/:path*", "/login", "/register"],
 };
@@ -104,10 +110,51 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute = pathname === "/login" || pathname === "/register";
 
+  if (pathname === "/register" && CRICKET_WEB_URL) {
+    return NextResponse.redirect(new URL("/signup", CRICKET_WEB_URL));
+  }
+  const hasSharedSession = Boolean(request.cookies.get(CRICKET_SESSION_COOKIE)?.value);
+
+  // A federated Karate session must not outlive the shared LordOfCricket session (logout anywhere).
+  if (request.cookies.get(SSO_MARKER_COOKIE) && !hasSharedSession) {
+    const response = isAuthRoute
+      ? NextResponse.next()
+      : NextResponse.redirect(new URL("/login?sessionExpired=1", request.url));
+    response.cookies.delete(ACCESS_TOKEN_COOKIE_NAME);
+    response.cookies.delete(REFRESH_TOKEN_COOKIE_NAME);
+    response.cookies.delete(SSO_MARKER_COOKIE);
+    return response;
+  }
+
+  // Cross-device revocation: the shared cookie may still be present but revoked upstream. A definite
+  // 401 from the identity provider ends this federated session (network errors fail open).
+  const cricketApi = process.env["CRICKET_API_URL"]?.replace(/\/+$/, "");
+  if (cricketApi && request.cookies.get(SSO_MARKER_COOKIE) && hasSharedSession && !isAuthRoute) {
+    const raw = (request.headers.get("cookie") ?? "").split(";").map((p) => p.trim()).find((p) => p.startsWith(`${CRICKET_SESSION_COOKIE}=`));
+    try {
+      const me = await fetch(`${cricketApi}/auth/me`, { headers: { cookie: raw ?? "" } });
+      if (me.status === 401) {
+        const response = NextResponse.redirect(new URL("/login?sessionExpired=1", request.url));
+        response.cookies.delete(ACCESS_TOKEN_COOKIE_NAME);
+        response.cookies.delete(REFRESH_TOKEN_COOKIE_NAME);
+        response.cookies.delete(SSO_MARKER_COOKIE);
+        response.cookies.delete(CRICKET_SESSION_COOKIE);
+        return response;
+      }
+    } catch {
+      // Identity provider unreachable — keep the existing session.
+    }
+  }
+
+  const ssoUrl = (target: string) => new URL(`/api/auth/sso?redirect=${encodeURIComponent(target)}`, request.url);
+
   if (isAuthRoute) {
     const primaryRole = payload?.roles[0];
     if (primaryRole) {
       return NextResponse.redirect(new URL(roleDashboardPath(primaryRole), request.url));
+    }
+    if (hasSharedSession && !request.nextUrl.searchParams.has("sso")) {
+      return NextResponse.redirect(ssoUrl("/dashboard"));
     }
     return NextResponse.next();
   }
@@ -134,6 +181,10 @@ export async function middleware(request: NextRequest) {
         response.headers.append("set-cookie", cookie);
       }
       return response;
+    }
+
+    if (hasSharedSession) {
+      return NextResponse.redirect(ssoUrl(pathname));
     }
 
     const loginUrl = new URL("/login", request.url);

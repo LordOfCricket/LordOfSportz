@@ -8,7 +8,7 @@ import {
 import { validate } from "../../middleware/validate";
 import { rateLimit } from "../../middleware/rateLimit";
 import { authenticate } from "../../middleware/auth";
-import { loginHandler, registerHandler, meHandler, refreshHandler, logoutHandler, realtimeTokenHandler } from "./auth.controller";
+import { loginHandler, registerHandler, meHandler, refreshHandler, logoutHandler, realtimeTokenHandler, ssoHandler } from "./auth.controller";
 
 export const authRouter = Router();
 
@@ -25,6 +25,7 @@ authRouter.post(
   validate(loginRequestSchema),
   loginHandler,
 );
+authRouter.post("/sso", rateLimit({ windowMs: 60_000, maxRequests: 30 }), ssoHandler);
 authRouter.get("/me", authenticate, meHandler);
 authRouter.get("/realtime-token", authenticate, realtimeTokenHandler);
 authRouter.post(

@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react'
+import { AppState } from 'react-native'
 import { Stack } from 'expo-router'
+import * as authApi from '../src/services/authApi'
 import * as SplashScreen from 'expo-splash-screen'
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
 import { useAuthStore, initializeAuthStore } from '../src/store/authStore'
@@ -22,6 +24,27 @@ export default function RootLayout() {
     }
     setup()
   }, [initialize])
+
+  // Shared-identity revocation (logout anywhere): re-check on foreground and every minute; a
+  // definite 401 ends this app's session instead of leaving a stale local login.
+  useEffect(() => {
+    if (status !== 'authenticated') return
+    const check = async () => {
+      try {
+        await authApi.fetchMe()
+      } catch (err: any) {
+        if (err?.response?.status === 401) await useAuthStore.getState().logout()
+      }
+    }
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void check()
+    })
+    const timer = setInterval(() => void check(), 60_000)
+    return () => {
+      sub.remove()
+      clearInterval(timer)
+    }
+  }, [status])
 
   if (status === 'loading') {
     return null

@@ -17,6 +17,8 @@ import bcrypt from 'bcryptjs'
 import { createHash } from 'node:crypto'
 import app from '../../app.js'
 import { pool } from '../../config/db.js'
+import { sign as signCookie } from 'cookie-signature'
+import { createSessionForUser } from '../../services/session.service.js'
 
 delete process.env.TWILIO_ACCOUNT_SID
 delete process.env.TWILIO_API_KEY
@@ -571,6 +573,90 @@ test('login-password: rate limiting blocks repeated attempts against the same id
       })
     }
     assert.equal(last.status, 429)
+  } finally {
+    await cleanupIdentifier(identifier)
+    await app_.close()
+  }
+})
+
+// Universal logout + cross-app SSO handoff.
+// Sessions are minted directly (not via /auth/login-password) so these tests never consume the
+// password-login rate limit that the rest of this file shares.
+async function loginCookie(_baseUrl, identifier) {
+  const { rows } = await pool.query('SELECT id FROM users WHERE email = $1', [identifier])
+  const { rawToken } = await createSessionForUser(rows[0].id)
+  const secret = process.env.SESSION_COOKIE_SECRET || 'dev-only-insecure-cookie-secret-change-me'
+  return `loc_session=${encodeURIComponent(`s:${signCookie(rawToken, secret)}`)}`
+}
+
+const meStatus = async (baseUrl, cookie) => (await fetch(`${baseUrl}/auth/me`, { headers: { Cookie: cookie } })).status
+
+test('POST /auth/logout?scope=all revokes EVERY session of the identity, not just the current one', async () => {
+  const app_ = await startTestApp()
+  const identifier = testEmail()
+  const otherIdentifier = testEmail()
+  try {
+    await createUserWithPassword(identifier, 'EMAIL')
+    await createUserWithPassword(otherIdentifier, 'EMAIL')
+    const [a, b, c] = [await loginCookie(app_.baseUrl, identifier), await loginCookie(app_.baseUrl, identifier), await loginCookie(app_.baseUrl, identifier)]
+    const other = await loginCookie(app_.baseUrl, otherIdentifier)
+
+    const res = await fetch(`${app_.baseUrl}/auth/logout?scope=all`, { method: 'POST', headers: { Cookie: a } })
+    assert.equal(res.status, 200)
+
+    for (const cookie of [a, b, c]) assert.equal(await meStatus(app_.baseUrl, cookie), 401)
+    assert.equal(await meStatus(app_.baseUrl, other), 200) // another identity is untouched
+  } finally {
+    await cleanupIdentifier(identifier)
+    await cleanupIdentifier(otherIdentifier)
+    await app_.close()
+  }
+})
+
+test('POST /auth/logout (no scope) still revokes only the current session', async () => {
+  const app_ = await startTestApp()
+  const identifier = testEmail()
+  try {
+    await createUserWithPassword(identifier, 'EMAIL')
+    const [a, b] = [await loginCookie(app_.baseUrl, identifier), await loginCookie(app_.baseUrl, identifier)]
+    await fetch(`${app_.baseUrl}/auth/logout`, { method: 'POST', headers: { Cookie: a } })
+    assert.equal(await meStatus(app_.baseUrl, a), 401)
+    assert.equal(await meStatus(app_.baseUrl, b), 200)
+  } finally {
+    await cleanupIdentifier(identifier)
+    await app_.close()
+  }
+})
+
+test('SSO handoff: one-time, audience-bound, mints a fresh session; global logout kills it', async () => {
+  const app_ = await startTestApp()
+  const identifier = testEmail()
+  const json = { 'Content-Type': 'application/json' }
+  try {
+    await createUserWithPassword(identifier, 'EMAIL')
+    const cookie = await loginCookie(app_.baseUrl, identifier)
+
+    const noAuth = await fetch(`${app_.baseUrl}/auth/sso/handoff`, { method: 'POST', headers: json, body: JSON.stringify({ audience: 'karate' }) })
+    assert.equal(noAuth.status, 401)
+    const badAudience = await fetch(`${app_.baseUrl}/auth/sso/handoff`, { method: 'POST', headers: { ...json, Cookie: cookie }, body: JSON.stringify({ audience: 'evil' }) })
+    assert.equal(badAudience.status, 400)
+
+    const { code } = await (await fetch(`${app_.baseUrl}/auth/sso/handoff`, { method: 'POST', headers: { ...json, Cookie: cookie }, body: JSON.stringify({ audience: 'karate' }) })).json()
+    const wrong = await fetch(`${app_.baseUrl}/auth/sso/redeem`, { method: 'POST', headers: json, body: JSON.stringify({ code, audience: 'cricket-mobile' }) })
+    assert.equal(wrong.status, 401) // wrong audience also consumes the code
+
+    const fresh = (await (await fetch(`${app_.baseUrl}/auth/sso/handoff`, { method: 'POST', headers: { ...json, Cookie: cookie }, body: JSON.stringify({ audience: 'karate' }) })).json()).code
+    const redeemed = await fetch(`${app_.baseUrl}/auth/sso/redeem`, { method: 'POST', headers: json, body: JSON.stringify({ code: fresh, audience: 'karate' }) })
+    assert.equal(redeemed.status, 200)
+    const destCookie = extractCookie(redeemed)
+    assert.notEqual(destCookie, cookie) // its own session, not the source token
+    assert.equal(await meStatus(app_.baseUrl, destCookie), 200)
+
+    const reused = await fetch(`${app_.baseUrl}/auth/sso/redeem`, { method: 'POST', headers: json, body: JSON.stringify({ code: fresh, audience: 'karate' }) })
+    assert.equal(reused.status, 401)
+
+    await fetch(`${app_.baseUrl}/auth/logout?scope=all`, { method: 'POST', headers: { Cookie: destCookie } })
+    assert.equal(await meStatus(app_.baseUrl, cookie), 401) // revoking the destination revoked the source too
   } finally {
     await cleanupIdentifier(identifier)
     await app_.close()

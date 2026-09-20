@@ -1,7 +1,9 @@
 import { updateUser } from '../models/user.model.js'
 import { createUmpireRequest, findLatestUmpireRequestForUser } from '../models/umpireRequest.model.js'
 import * as otpAuthService from '../services/otpAuth.service.js'
-import { revokeSession } from '../services/session.service.js'
+import { revokeSession, createSessionForUser, validateSessionToken, revokeAllSessionsForUser } from '../services/session.service.js'
+import { createHandoff, redeemHandoff } from '../services/ssoHandoff.service.js'
+import { findUserById } from '../models/user.model.js'
 import { setSessionCookie, clearSessionCookie, SESSION_COOKIE_NAME } from '../middlewares/session.js'
 import { OtpAuthError } from '../domain/otpAuth/errors.js'
 import { hasAnyActiveFactor, isSuperAdmin } from '../services/mfaState.service.js'
@@ -212,6 +214,11 @@ export async function logout(req, res) {
   const sessionToken = req.signedCookies?.[SESSION_COOKIE_NAME]
   if (sessionToken) {
     try {
+      // ?scope=all: universal logout — ends every session of this identity (every sport/app).
+      if (req.query?.scope === 'all') {
+        const session = await validateSessionToken(sessionToken)
+        if (session?.user_id) await revokeAllSessionsForUser(session.user_id)
+      }
       await revokeSession(sessionToken)
     } catch (err) {
       logger.error('Failed to revoke session on logout', { error: err.message })
@@ -241,6 +248,32 @@ export async function selectPlayerType(req, res, next) {
     }
 
     res.json({ user })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// Cross-app SSO handoff. /sso/handoff (signed in) mints a one-time, 60s code bound
+// to a destination app; /sso/redeem exchanges it for a fresh session for that
+// app (Set-Cookie) — the redeeming app never sees the source app's token.
+export async function ssoHandoff(req, res) {
+  const handoff = createHandoff(req.user.id, req.body?.audience)
+  if (!handoff) return res.status(400).json({ message: 'Invalid audience.' })
+  res.json(handoff)
+}
+
+export async function ssoRedeem(req, res, next) {
+  try {
+    const userId = redeemHandoff(req.body?.code, req.body?.audience)
+    const user = userId ? await findUserById(userId) : null
+    if (!user) return res.status(401).json({ message: 'Invalid or expired sign-in code.' })
+    const { rawToken, expiresAt } = await createSessionForUser(user.id, {
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+    })
+    setSessionCookie(res, rawToken, expiresAt)
+    const { password_hash, temp_password_hash, ...publicUser } = user
+    res.json({ user: publicUser })
   } catch (err) {
     next(err)
   }

@@ -13,6 +13,8 @@ import {
   Platform,
 } from 'react-native'
 import { useRouter } from 'expo-router'
+import * as Linking from 'expo-linking'
+import { ssoHandoff } from '../../src/services/authApi'
 import Constants from 'expo-constants'
 import { useAuth } from '../../src/hooks/useAuth'
 import { Colors, Spacing, Typography } from '../../src/constants/colors'
@@ -88,6 +90,16 @@ export default function SettingsScreen() {
       setError(message)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const openKarate = async () => {
+    try {
+      const code = await ssoHandoff('karate')
+      const base = process.env.EXPO_PUBLIC_KARATE_APP_URL || 'karateplatform://'
+      await Linking.openURL(`${base}sso?code=${encodeURIComponent(code)}`)
+    } catch {
+      Alert.alert('Karate', 'Could not open Karate. Is the app installed?')
     }
   }
 
@@ -234,6 +246,20 @@ export default function SettingsScreen() {
             accessibilityLabel="Change password"
           >
             <Text style={styles.actionText}>Change Password</Text>
+            <Text style={styles.actionArrow}>›</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Other sports (shared identity — no second sign-in) */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>LORDOFSPORTZ</Text>
+          <TouchableOpacity
+            style={styles.card}
+            onPress={openKarate}
+            accessibilityRole="button"
+            accessibilityLabel="Open Karate"
+          >
+            <Text style={styles.actionText}>Open Karate</Text>
             <Text style={styles.actionArrow}>›</Text>
           </TouchableOpacity>
         </View>

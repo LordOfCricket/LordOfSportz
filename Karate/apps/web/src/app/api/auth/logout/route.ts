@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { REFRESH_TOKEN_COOKIE_NAME } from "@karate/constants";
 import { callBackend } from "@/lib/server/backend-client";
-import { clearAuthCookies } from "@/lib/server/auth-cookies";
+import { clearAuthCookies, clearSharedSession, CRICKET_SESSION_COOKIE } from "@/lib/server/auth-cookies";
 
 /**
  * Revokes the server-side refresh session (Phase 3), then always clears the
@@ -22,7 +22,21 @@ export async function POST() {
     }
   }
 
+  const cricketApi = process.env["CRICKET_API_URL"]?.replace(/\/+$/, "");
+  const cricketRaw = cookies().get(CRICKET_SESSION_COOKIE)?.value;
+  if (cricketApi && cricketRaw) {
+    try {
+      await fetch(`${cricketApi}/auth/logout?scope=all`, {
+        method: "POST",
+        headers: { Cookie: `${CRICKET_SESSION_COOKIE}=${encodeURIComponent(cricketRaw)}` },
+      });
+    } catch {
+      // Shared-session revocation is best-effort; the local clear below always runs.
+    }
+  }
+
   const response = NextResponse.json({ success: true, data: { loggedOut: true } });
   clearAuthCookies(response);
+  clearSharedSession(response);
   return response;
 }

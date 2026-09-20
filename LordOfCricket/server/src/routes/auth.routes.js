@@ -11,6 +11,8 @@ import {
   loginWithPassword,
   forgotPassword,
   resetPassword,
+  ssoHandoff,
+  ssoRedeem,
 } from '../controllers/auth.controller.js'
 import { sendCode as signupSendCode, verifyCode as signupVerifyCode, createAccount } from '../controllers/signup.controller.js'
 import { changePasswordHandler } from '../controllers/passwordChange.controller.js'
@@ -19,6 +21,7 @@ import {
   otpRequestLimiter,
   otpVerifyLimiter,
   passwordLoginLimiter,
+  ssoLimiter,
   passwordLoginIdentifierLimiter,
   accountCreationLimiter,
   passwordChangeLimiter,
@@ -67,6 +70,8 @@ router.post('/signup/send-code', otpRequestLimiter, signupSendCode)
 router.post('/signup/verify-code', otpVerifyLimiter, signupVerifyCode)
 router.post('/signup/create-account', accountCreationLimiter, createAccount)
 
+router.post('/sso/handoff', requireAuth, ssoLimiter, ssoHandoff)
+router.post('/sso/redeem', ssoLimiter, ssoRedeem)
 router.get('/me', requireAuth, me)
 router.patch('/role', requireAuth, selectRole)
 router.patch('/player-type', requireAuth, selectPlayerType)
