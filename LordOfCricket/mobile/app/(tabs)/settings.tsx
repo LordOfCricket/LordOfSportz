@@ -12,13 +12,12 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
-import { useRouter } from 'expo-router'
+import { Redirect, useRouter } from 'expo-router'
 import * as Linking from 'expo-linking'
 import { ssoHandoff } from '../../src/services/authApi'
 import Constants from 'expo-constants'
 import { useAuth } from '../../src/hooks/useAuth'
 import { Colors, Spacing, Typography } from '../../src/constants/colors'
-import { ErrorScreen } from '../../src/components/ErrorScreen'
 
 const appVersion = Constants.expoConfig?.version || '1.0.0'
 
@@ -33,18 +32,9 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ErrorScreen
-          title="Not Authenticated"
-          message="Please log in to access settings"
-          onRetry={() => router.back()}
-          retryLabel="Go Back"
-        />
-      </SafeAreaView>
-    )
-  }
+  // Session revoked (logout anywhere) or never signed in: leave this screen for the signed-out flow
+  // instead of stranding the user here.
+  if (!user) return <Redirect href="/(auth)/login" />
 
   const handleChangePassword = async () => {
     setError(null)

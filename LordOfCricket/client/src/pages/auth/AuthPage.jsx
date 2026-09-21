@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, ShieldCheck } from 'lucide-react'
 import Input from '../../components/ui/Input.jsx'
+import UniversalAuthBar from '../../components/auth/UniversalAuthBar.jsx'
 import { useAuthPage } from '../../hooks/useAuthPage.js'
 
 const COPY = {
-  eyebrow: 'Member Access',
-  heading: 'Welcome to LOC',
-  subtitle: 'Sign in with your email or phone number.',
+  eyebrow: 'LordOfSportz account',
+  heading: 'Welcome back',
+  subtitle: 'One sign-in for LordOfSportz, LordOfCricket and Karate.',
 }
 
 // New Signup Flow — subtitles for login's sub-views. 'password' (the
@@ -67,9 +68,11 @@ export default function AuthPage() {
     }[step] || ((e) => e.preventDefault())
 
   return (
+    <div className="loc-universal">
+    <UniversalAuthBar />
     <main className="loc-page font-loc-body">
-      <section className="mx-auto flex min-h-screen max-w-7xl items-center px-8 lg:px-16">
-        <div className="w-full max-w-2xl">
+      <section className="mx-auto flex min-h-[calc(100vh-4.25rem)] max-w-7xl items-center px-6 py-12 sm:px-8 lg:px-16">
+        <div className="mx-auto w-full max-w-xl">
           <span className="loc-eyebrow text-xs sm:text-sm">{COPY.eyebrow}</span>
 
           <h1 className="loc-heading mt-4 text-5xl leading-[0.95] sm:text-6xl">
@@ -279,12 +282,13 @@ export default function AuthPage() {
 
               <div className="flex items-center justify-center gap-2 text-xs text-loc-muted">
                 <ShieldCheck className="h-4 w-4 text-loc-green" />
-                One secure sign-in for every LOC role.
+                One secure sign-in for every sport and role.
               </div>
             </div>
           </form>
         </div>
       </section>
     </main>
+    </div>
   )
 }

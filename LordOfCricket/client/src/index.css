@@ -473,3 +473,12 @@ body,
     display: none;
   }
 }
+/* Universal sign-in / sign-up (LordOfSportz identity): scoped neutral + amber theme, no global change. */
+.loc-universal {
+  --color-loc-mint: #f6f4ee;
+  --color-loc-mint-deep: #f1ede3;
+  --color-loc-green: #a16207;
+  --color-loc-green-strong: #854d0e;
+  --color-loc-green-bright: #ca8a04;
+  --color-loc-border: #e9dfc8;
+}

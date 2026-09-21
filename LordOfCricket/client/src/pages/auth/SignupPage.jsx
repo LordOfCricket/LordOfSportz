@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react'
 import Input from '../../components/ui/Input.jsx'
+import UniversalAuthBar from '../../components/auth/UniversalAuthBar.jsx'
 import { useSignupPage } from '../../hooks/useSignupPage.js'
 
 // Length-tiered only, matching domain/otpAuth/password.js's own length-over-
@@ -70,7 +71,7 @@ export default function SignupPage() {
 
   if (accountCreated) {
     return (
-      <main className="loc-page flex min-h-screen items-center justify-center px-6 font-loc-body">
+      <div className="loc-universal"><UniversalAuthBar /><main className="loc-page flex min-h-[calc(100vh-4.25rem)] items-center justify-center px-6 font-loc-body">
         <div className="loc-card mx-auto w-full max-w-lg p-10 text-center">
           <CheckCircle2 className="mx-auto h-14 w-14 text-loc-green" />
           <h1 className="loc-heading mt-6 text-3xl">Account Created</h1>
@@ -79,19 +80,19 @@ export default function SignupPage() {
             Continue to Login <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
-      </main>
+      </main></div>
     )
   }
 
   return (
-    <main className="loc-page py-16 font-loc-body">
+    <div className="loc-universal"><UniversalAuthBar /><main className="loc-page py-12 font-loc-body">
       <section className="mx-auto flex min-h-full max-w-3xl flex-col items-center px-6">
         <div className="w-full text-center">
-          <span className="loc-eyebrow text-xs sm:text-sm">Join LOC</span>
+          <span className="loc-eyebrow text-xs sm:text-sm">Join LordOfSportz</span>
           <h1 className="loc-heading mt-4 text-4xl leading-[0.95] sm:text-5xl">
             Create Your <span className="text-loc-green">Account</span>
           </h1>
-          <p className="mt-4 text-lg text-loc-muted">One account for every LOC role — Player or Umpire.</p>
+          <p className="mt-4 text-lg text-loc-muted">One account for LordOfSportz, LordOfCricket and Karate — Player or Umpire.</p>
         </div>
 
         <form
@@ -283,6 +284,6 @@ export default function SignupPage() {
           </div>
         </form>
       </section>
-    </main>
+    </main></div>
   )
 }
