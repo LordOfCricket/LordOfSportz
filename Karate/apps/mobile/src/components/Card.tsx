@@ -13,9 +13,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     padding: spacing.lg,
     shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    elevation: 2,
   },
 });

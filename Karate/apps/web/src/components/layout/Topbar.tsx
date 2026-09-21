@@ -12,8 +12,8 @@ export function Topbar({ role, userName }: { role: UserRole; userName: string })
         <span className="text-sm font-semibold tracking-tight text-text-primary">Karate</span>
       </Link>
       <div className="hidden min-w-0 md:block">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-accent">{ROLE_LABELS[role]} dashboard</p>
         <p className="truncate text-sm font-semibold text-text-primary">Welcome back, {userName}</p>
-        <p className="text-xs text-text-muted">{ROLE_LABELS[role]} dashboard</p>
       </div>
       <div className="flex items-center gap-3">
         <span className="hidden sm:inline-flex"><Badge tone="neutral">{ROLE_LABELS[role]}</Badge></span>

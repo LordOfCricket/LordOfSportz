@@ -45,7 +45,8 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.screen}>
       <View style={styles.brand}>
         <View style={styles.brandDot} />
-        <Text style={styles.brandText}>Karate Platform</Text>
+        <Text style={styles.brandText}>KARATE</Text>
+        <Text style={styles.brandSub}>LORDOFSPORTZ</Text>
       </View>
       <Text style={styles.title}>Sign in</Text>
       <Text style={styles.subtitle}>Use your LordOfSportz account — one login for every sport.</Text>
@@ -85,7 +86,8 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginBottom: spacing.xl },
   brandDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
-  brandText: { fontSize: 15, fontWeight: "700", color: colors.textPrimary },
+  brandText: { fontSize: 16, fontWeight: "800", letterSpacing: 1, color: colors.textPrimary },
+  brandSub: { fontSize: 10, fontWeight: "700", letterSpacing: 2.5, color: colors.gold },
   screen: { flex: 1, backgroundColor: colors.surface, padding: spacing.xl, justifyContent: "center" },
   title: { ...typography.title, color: colors.textPrimary },
   subtitle: { ...typography.body, color: colors.textMuted, marginTop: spacing.xs, marginBottom: spacing.lg },

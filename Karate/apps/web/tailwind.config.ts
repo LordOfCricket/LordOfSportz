@@ -31,6 +31,7 @@ const config: Config = {
         gold: {
           DEFAULT: "var(--color-gold)",
         },
+        amber: "var(--color-amber, #e9b949)",
         text: {
           primary: "var(--color-text-primary)",
           secondary: "var(--color-text-secondary)",
@@ -43,6 +44,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Impact", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
       },
       borderRadius: {
@@ -52,8 +54,8 @@ const config: Config = {
         xl: "16px",
       },
       boxShadow: {
-        card: "0 1px 2px rgba(0,0,0,0.06), 0 1px 1px rgba(0,0,0,0.04)",
-        raised: "0 4px 16px rgba(0,0,0,0.10)",
+        card: "0 1px 0 rgba(255,255,255,0.03) inset, 0 6px 20px rgba(0,0,0,0.22)",
+        raised: "0 10px 30px rgba(0,0,0,0.35)",
       },
     },
   },

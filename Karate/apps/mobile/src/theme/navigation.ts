@@ -4,7 +4,7 @@ import { colors } from "./tokens";
 export const tabScreenOptions = {
   headerStyle: { backgroundColor: colors.surfaceRaised },
   headerTintColor: colors.textPrimary,
-  headerTitleStyle: { fontSize: 17, fontWeight: "700" as const },
+  headerTitleStyle: { fontSize: 17, fontWeight: "700" as const, color: colors.textPrimary },
   headerShadowVisible: false,
   tabBarActiveTintColor: colors.accent,
   tabBarInactiveTintColor: colors.textMuted,

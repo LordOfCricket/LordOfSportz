@@ -1,31 +1,31 @@
 /**
  * Mirrors the web design tokens (apps/web/src/app/globals.css) so both
- * clients read as one visual system. React Native has no CSS custom
+ * clients read as one visual system (dark, charcoal + deep red, amber as a sparing accent). React Native has no CSS custom
  * properties, so this is the single source of truth on the mobile side —
  * keep it in sync by hand until a shared design-token package is worth the
  * overhead.
  */
 export const colors = {
-  ink: "#15161b",
-  inkSoft: "#1f212a",
+  ink: "#0c0d10",
+  inkSoft: "#16171c",
 
-  surface: "#faf9f6",
-  surfaceRaised: "#ffffff",
-  surfaceSunken: "#f1efe9",
-  border: "#e3e0d8",
+  surface: "#0f1013",
+  surfaceRaised: "#17181d",
+  surfaceSunken: "#0b0b0e",
+  border: "#26282f",
 
-  accent: "#a3222c",
-  accentHover: "#8a1c25",
-  gold: "#b3924f",
+  accent: "#c73d45",
+  accentHover: "#d95259",
+  gold: "#e9b949",
 
-  textPrimary: "#15161b",
-  textSecondary: "#52565f",
-  textMuted: "#888c94",
+  textPrimary: "#f5f3ee",
+  textSecondary: "#b7bac2",
+  textMuted: "#7d818a",
 
-  success: "#1f8a4c",
-  warning: "#b3720c",
-  danger: "#c0392b",
-  info: "#2c5fb0",
+  success: "#3fb772",
+  warning: "#d99a2b",
+  danger: "#e0685c",
+  info: "#6c9be0",
 
   white: "#ffffff",
 };

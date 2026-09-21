@@ -34,7 +34,8 @@ export default function EntryScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.brand}>
         <View style={styles.dot} />
-        <Text style={styles.brandText}>Karate Platform</Text>
+        <Text style={styles.brandText}>KARATE</Text>
+        <Text style={styles.brandSub}>LORDOFSPORTZ</Text>
       </View>
       <View style={styles.hero}>
         <Text style={styles.eyebrow}>KARATE · LORDOFSPORTZ</Text>
@@ -59,7 +60,8 @@ const styles = StyleSheet.create({
   centered: { flex: 1, backgroundColor: colors.ink, alignItems: "center", justifyContent: "center" },
   brand: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginTop: spacing.md },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.accent },
-  brandText: { color: colors.white, fontSize: 15, fontWeight: "700" },
+  brandText: { color: colors.white, fontSize: 16, fontWeight: "800", letterSpacing: 1 },
+  brandSub: { color: colors.gold, fontSize: 10, fontWeight: "700", letterSpacing: 2.5 },
   hero: { gap: spacing.md },
   eyebrow: { color: colors.accent, fontSize: 12, fontWeight: "700", letterSpacing: 2 },
   heading: { color: colors.white, fontSize: 34, lineHeight: 38, fontWeight: "700" },

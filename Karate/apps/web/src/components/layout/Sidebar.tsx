@@ -18,7 +18,7 @@ export function Sidebar({ role }: { role: UserRole }) {
     >
       <Link href="/" className="flex h-16 items-center gap-2 border-b border-border px-5">
         <span className="h-2.5 w-2.5 rounded-full bg-accent" aria-hidden="true" />
-        <span className="text-sm font-semibold tracking-tight text-text-primary">Karate Platform</span>
+        <span className="k-display text-xl tracking-wide text-text-primary">KARATE<span className="ml-1 text-[9px] font-sans font-semibold tracking-[0.2em] text-amber">LORDOFSPORTZ</span></span>
       </Link>
       <ul className="flex flex-1 flex-col gap-1 p-3">
         {items.map((item) => {
@@ -31,8 +31,8 @@ export function Sidebar({ role }: { role: UserRole }) {
                 className={cn(
                   "block rounded-md px-3 py-2 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-accent/10 text-accent"
-                    : "text-text-secondary hover:bg-surface-sunken hover:text-text-primary",
+                    ? "border-l-2 border-accent bg-accent/10 text-text-primary"
+                    : "border-l-2 border-transparent text-text-secondary hover:bg-surface-sunken hover:text-text-primary",
                 )}
               >
                 {item.label}
