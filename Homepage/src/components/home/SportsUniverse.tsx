@@ -12,13 +12,13 @@ export default function SportsUniverse() {
   if (!selectedSport) return null;
 
   return (
-    <section id="sports" aria-labelledby="sports-heading" className="sports-universe scroll-mt-20 overflow-hidden border-t border-line-soft py-24 sm:py-32 lg:py-40">
+    <section id="sports" aria-labelledby="sports-heading" className="sports-universe scroll-mt-20 overflow-hidden border-t border-line-soft py-20 sm:py-24 lg:py-28">
       <Container>
         <Reveal>
           <div className="flex items-end justify-between gap-8 border-b border-line pb-7">
             <div>
               <span className="text-xs font-semibold tracking-[0.3em] text-accent uppercase">Sports</span>
-              <h2 id="sports-heading" className="mt-4 font-display text-6xl leading-[0.82] text-paper sm:text-8xl">FIND YOUR ARENA.</h2>
+              <h2 id="sports-heading" className="mt-4 font-display text-5xl leading-[0.85] text-paper sm:text-7xl">FIND YOUR ARENA.</h2>
             </div>
             <span className="hidden max-w-xs text-right text-sm leading-relaxed text-muted sm:block">One connected home for the sports, people and moments that keep you moving.</span>
           </div>

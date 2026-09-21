@@ -6,7 +6,7 @@ const categories = ["Cricket", "Karate", "Lawn Tennis", "Football"];
 
 export default function ShopPreview() {
   return (
-    <section id="shop" aria-labelledby="shop-heading" className="border-t border-line-soft py-20 sm:py-28">
+    <section id="shop" aria-labelledby="shop-heading" className="border-t border-line-soft py-16 sm:py-24">
       <Container>
         <Reveal className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between">
           <div>

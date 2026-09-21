@@ -10,7 +10,7 @@ const activity = [
 
 export default function MatchesPreview() {
   return (
-    <section id="matches" aria-labelledby="matches-heading" className="border-t border-line-soft py-20 sm:py-28">
+    <section id="matches" aria-labelledby="matches-heading" className="border-t border-line-soft py-16 sm:py-24">
       <Container>
         <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
           <Reveal>

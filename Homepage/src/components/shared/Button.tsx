@@ -15,7 +15,7 @@ const base =
 
 const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
   primary:
-    "bg-paper text-ink hover:bg-accent hover:-translate-y-0.5 hover:shadow-[0_8px_30px_rgba(74,222,128,0.25)]",
+    "bg-paper text-ink hover:bg-accent",
   secondary:
     "border border-line text-paper hover:border-paper/60 hover:-translate-y-0.5",
   ghost: "text-paper underline-offset-4 hover:text-accent",

@@ -2,7 +2,6 @@
 
 import Button from "@/components/shared/Button";
 import Container from "@/components/shared/Container";
-import { ChevronDownIcon } from "@/components/shared/icons";
 import MultiSportScene from "@/components/home/MultiSportScene";
 import { useEffect, useState } from "react";
 
@@ -34,12 +33,11 @@ export default function Hero() {
       style={{ "--hero-progress": scrollProgress, "--hero-shift": `${scrollProgress * -3}rem` } as React.CSSProperties}
     >
       <div aria-hidden="true" className="hero-backdrop pointer-events-none absolute inset-0">
-        <div className="hero-poster absolute inset-[-5%]" />
         <div className="hero-vignette absolute inset-0" />
         <div className="hero-grain absolute inset-0" />
       </div>
 
-      <div className="hero-scene-wrap absolute inset-0 z-[1]">
+      <div className="absolute inset-0 z-[1]">
         <MultiSportScene />
       </div>
 
@@ -67,21 +65,8 @@ export default function Hero() {
               SHOP GEAR
             </Button>
           </div>
-          <ul aria-label="Sports on the platform" className="hero-meta mt-6 flex w-full max-w-2xl flex-wrap gap-x-8 gap-y-3 border-t border-paper/15 pt-5 text-xs font-semibold tracking-[0.22em] text-paper/70 uppercase">
-            <li className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent" />Cricket · Live</li>
-            <li className="flex items-center gap-2"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-accent" />Karate · Live</li>
-            <li className="flex items-center gap-2 text-paper/40"><span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-paper/30" />Tennis · Soon</li>
-          </ul>
         </div>
       </Container>
-
-      <a
-        href="#sports"
-        aria-label="Scroll to sports section"
-        className="absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 text-muted transition-colors hover:text-accent sm:block"
-      >
-        <ChevronDownIcon className="h-6 w-6 animate-bounce" />
-      </a>
     </section>
   );
 }

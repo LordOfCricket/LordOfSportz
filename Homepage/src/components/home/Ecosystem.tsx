@@ -13,7 +13,7 @@ export default function Ecosystem() {
   const { user, ready, logout } = useAuthUser();
 
   return (
-    <section id="about" aria-labelledby="account-heading" className="scroll-mt-20 border-t border-line-soft bg-ink-2/40 py-20 sm:py-28">
+    <section id="about" aria-labelledby="account-heading" className="scroll-mt-20 border-t border-line-soft bg-ink-2/40 py-16 sm:py-24">
       <Container>
         <Reveal>
           <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end lg:gap-20">

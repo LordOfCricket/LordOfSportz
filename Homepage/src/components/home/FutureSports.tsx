@@ -7,7 +7,7 @@ export default function FutureSports() {
   return (
     <section
       aria-labelledby="future-sports-heading"
-      className="border-t border-line-soft py-20 sm:py-28"
+      className="border-t border-line-soft py-16 sm:py-24"
     >
       <Container className="flex flex-col gap-14">
         <Reveal>
